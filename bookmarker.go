@@ -25,6 +25,8 @@ import (
 	"os"
 	"sync"
 	"tryffel.net/pkg/bookmarker/config"
+	"tryffel.net/pkg/bookmarker/storage"
+	"tryffel.net/pkg/bookmarker/storage/migrations"
 	"tryffel.net/pkg/bookmarker/ui"
 )
 
@@ -71,6 +73,19 @@ func main() {
 
 	logrus.Infof("############ %s v%s ############", config.AppName, config.Version)
 	logrus.SetLevel(level)
+
+	db, err := storage.NewDatabase(conf.DbFile())
+	defer db.Close()
+	if err != nil {
+		logrus.Errorf("database connection failed: %v", err)
+		os.Exit(1)
+	}
+
+	err = migrations.Migrate(db.Engine(), migrations.BookmarkerMigrations)
+	if err != nil {
+		logrus.Fatal("database migrations failed: %v", err)
+		os.Exit(1)
+	}
 
 	app := ui.NewApplication()
 	app.Run()
