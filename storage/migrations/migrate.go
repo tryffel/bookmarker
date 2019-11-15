@@ -28,17 +28,17 @@ import (
 
 var BookmarkerMigrations = []Migrator{
 	&Migration{
-		Name: "initial schema",
-		Level: 1,
+		Name:   "initial schema",
+		Level:  1,
 		Schema: v1,
 	},
 }
 
 type Schema struct {
-	Level		int			`db:"level"`
-	Success		int 		`db:"success"`
-	Timestamp	time.Time	`db:"timestamp"`
-	TookMs		int 		`db:"took_ms"`
+	Level     int       `db:"level"`
+	Success   int       `db:"success"`
+	Timestamp time.Time `db:"timestamp"`
+	TookMs    int       `db:"took_ms"`
 }
 
 // Migrator describes single migration level
@@ -53,9 +53,9 @@ type Migrator interface {
 
 // Migration implements migrator
 type Migration struct {
-	Name	string
-	Level	int
-	Schema	string
+	Name   string
+	Level  int
+	Schema string
 }
 
 func (m *Migration) MName() string {
@@ -108,7 +108,7 @@ CREATE TABLE "schemas" (
 		logrus.Warningf("Migrating database schema %d -> %d", lastLevel, v.MLevel())
 		err := migrateSingle(db, v)
 		if err != nil {
-			return fmt.Errorf( "failed to run migrations: %v", err)
+			return fmt.Errorf("failed to run migrations: %v", err)
 		}
 		lastLevel = v.MLevel()
 	}
@@ -123,7 +123,7 @@ func migrateSingle(db *sqlx.DB, migration Migrator) error {
 	s := &Schema{
 		Level:     migration.MLevel(),
 		Timestamp: time.Now(),
-		TookMs: int(time.Since(start).Nanoseconds() / 1000000),
+		TookMs:    int(time.Since(start).Nanoseconds() / 1000000),
 	}
 
 	if merr == nil {
@@ -132,20 +132,19 @@ func migrateSingle(db *sqlx.DB, migration Migrator) error {
 		s.Success = 0
 	}
 
-	_, err := db.Exec("INSERT INTO schemas (level, success, timestamp, took_ms) " +
+	_, err := db.Exec("INSERT INTO schemas (level, success, timestamp, took_ms) "+
 		"VALUES ($1, $2, $3, $4)", s.Level, s.Success, s.Timestamp, s.TookMs)
 
 	if err != nil {
-			return fmt.Errorf("failed to insert new schema: %s", (fmt.Sprintf("migration %d failed: %v", migration.MLevel(), merr))))
+		return fmt.Errorf("migration failed: insert schema: %v", merr)
 	}
 	return nil
 }
 
-
 // CurrentVersion returns current version
 func CurrentVersion(db *sqlx.DB) (Schema, error) {
 	current := Schema{}
-	err  := db.Get(&current, "SELECT * FROM schemas ORDER BY level DESC LIMIT 1")
+	err := db.Get(&current, "SELECT * FROM schemas ORDER BY level DESC LIMIT 1")
 
 	if err != nil {
 		e := err.Error()

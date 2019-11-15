@@ -30,15 +30,17 @@ func defaultShortcuts() Shortcuts {
 }
 
 type NavBar struct {
-	Help tcell.Key
-	Menu tcell.Key
-	Quit tcell.Key
+	Help        tcell.Key
+	NewBookmark tcell.Key
+	Menu        tcell.Key
+	Quit        tcell.Key
 }
 
 func defaultNavBar() NavBar {
 	return NavBar{
-		Help: tcell.KeyF1,
-		Menu: tcell.KeyF2,
-		Quit: tcell.KeyF3,
+		Help:        tcell.KeyF1,
+		NewBookmark: tcell.KeyF2,
+		Menu:        tcell.KeyF3,
+		Quit:        tcell.KeyF4,
 	}
 }

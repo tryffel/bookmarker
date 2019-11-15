@@ -26,8 +26,8 @@ type Bookmark struct {
 	Name        string
 	LowerName   string
 	Description string
-	Link        string
+	Content     string
 	Project     string
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	CreatedAt   time.Time `db:"created_at"`
+	UpdatedAt   time.Time `db:"updated_at"`
 }

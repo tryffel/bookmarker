@@ -87,7 +87,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	app := ui.NewApplication()
+	app := ui.NewApplication(conf.Colors, &conf.Shortcuts, db)
+	app.Initdata()
 	app.Run()
 
 }

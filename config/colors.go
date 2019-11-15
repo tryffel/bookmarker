@@ -21,6 +21,12 @@ import (
 	"tryffel.net/go/twidgets"
 )
 
+const (
+	colorBackground      = tcell.Color237
+	colorBackgroundLight = tcell.Color239
+	colorText            = tcell.Color23
+)
+
 type Colors struct {
 	Background          tcell.Color
 	TextPrimary         tcell.Color
@@ -33,11 +39,12 @@ type Colors struct {
 	NavBar              ColorNavBar
 	Bookmarks           ColorBookmarks
 	Projects            ColorProjects
+	BookmarkForm        ColorBookmarkForm
 }
 
 func defaultColors() Colors {
 	return Colors{
-		Background:          tcell.Color235,
+		Background:          colorBackground,
 		TextPrimary:         tcell.Color252,
 		TextPrimaryLight:    tcell.Color254,
 		TextPrimaryDim:      tcell.Color249,
@@ -48,6 +55,7 @@ func defaultColors() Colors {
 		NavBar:              defaultColorNavBar(),
 		Bookmarks:           defaultColorBookmarks(),
 		Projects:            defaultColorProjects(),
+		BookmarkForm:        defaultColorBookmarkform(),
 	}
 }
 
@@ -64,11 +72,11 @@ type ColorNavBar struct {
 
 func defaultColorNavBar() ColorNavBar {
 	return ColorNavBar{
-		Background:       tcell.Color235,
+		Background:       colorBackground,
 		BackgroundFocus:  tcell.Color235,
 		Text:             tcell.Color252,
 		TextFocus:        tcell.Color253,
-		ButtonBackground: tcell.Color235,
+		ButtonBackground: colorBackground,
 		ButtonFocus:      tcell.Color23,
 		Shortcut:         tcell.Color214,
 		ShortcutFocus:    tcell.Color214,
@@ -99,7 +107,7 @@ type ColorBookmarks struct {
 
 func defaultColorBookmarks() ColorBookmarks {
 	return ColorBookmarks{
-		Background:         tcell.Color235,
+		Background:         colorBackground,
 		BackgroundSelected: tcell.Color23,
 		Text:               tcell.Color252,
 		TextSelected:       tcell.Color253,
@@ -118,10 +126,28 @@ type ColorProjects struct {
 
 func defaultColorProjects() ColorProjects {
 	return ColorProjects{
-		Background:         tcell.Color235,
+		Background:         colorBackground,
 		BackgroundSelected: tcell.Color23,
 		Text:               tcell.Color252,
 		TextSelected:       tcell.Color253,
 		Header:             tcell.Color23,
+	}
+}
+
+type ColorBookmarkForm struct {
+	Background     tcell.Color
+	Label          tcell.Color
+	Text           tcell.Color
+	TextSelected   tcell.Color
+	TextBackground tcell.Color
+}
+
+func defaultColorBookmarkform() ColorBookmarkForm {
+	return ColorBookmarkForm{
+		Background:     colorBackgroundLight,
+		Label:          tcell.Color252,
+		Text:           tcell.Color187,
+		TextSelected:   tcell.Color23,
+		TextBackground: tcell.Color235,
 	}
 }

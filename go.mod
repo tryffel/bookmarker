@@ -4,6 +4,7 @@ go 1.13
 
 require (
 	github.com/BurntSushi/toml v0.3.1
+	github.com/gdamore/tcell v1.3.0
 	github.com/jmoiron/sqlx v1.2.0
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/mattn/go-colorable v0.1.4 // indirect
@@ -17,4 +18,5 @@ require (
 	golang.org/x/crypto v0.0.0-20191029031824-8986dd9e96cf // indirect
 	golang.org/x/sys v0.0.0-20191104094858-e8c54fb511f6 // indirect
 	google.golang.org/appengine v1.6.5 // indirect
+	tryffel.net/go/twidgets v0.0.0-20191115152014-72d61f596b22
 )
