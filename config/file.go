@@ -37,6 +37,8 @@ func ReadConfigFile() (*ApplicationConfig, error) {
 		return nil, err
 	}
 
+	Configuration = conf
+
 	// Error caught in previous call
 	dir, _ := GetConfigDirectory()
 	dir = path.Join(dir, AppNameLower)

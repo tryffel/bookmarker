@@ -25,11 +25,15 @@ import (
 
 type ApplicationConfig struct {
 	LogLevel   string `toml:"log_level"`
+	Colors     Colors
+	Shortcuts  Shortcuts
 	dbFile     string
 	logFile    string
 	configDir  string
 	configFile string
 }
+
+var Configuration *ApplicationConfig = &ApplicationConfig{}
 
 func (a *ApplicationConfig) ParseLogLevel() (logrus.Level, error) {
 	return logrus.ParseLevel(a.LogLevel)
@@ -46,7 +50,9 @@ func (a *ApplicationConfig) Logfile() string {
 //Default configuration which config file overwrites
 func defaultConfig() *ApplicationConfig {
 	conf := &ApplicationConfig{
-		LogLevel: "debug",
+		LogLevel:  "debug",
+		Colors:    defaultColors(),
+		Shortcuts: defaultShortcuts(),
 	}
 	return conf
 }
