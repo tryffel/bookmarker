@@ -20,6 +20,7 @@
 package storage
 
 import (
+	"database/sql"
 	"github.com/sirupsen/logrus"
 	"strings"
 	"tryffel.net/pkg/bookmarker/storage/models"
@@ -33,6 +34,7 @@ type name struct {
 func (d *Database) GetAllBookmarks() ([]*models.Bookmark, error) {
 	query := `
 SELECT
+    b.id as id,
     b.name AS name, 
     b.description AS description, 
     b.content as content, 
@@ -57,13 +59,13 @@ LIMIT 100;
 
 	for rows.Next() {
 		var b models.Bookmark
-		var tags string
-		err = rows.Scan(&b.Name, &b.Description, &b.Content, &b.Project, &b.CreatedAt, &b.UpdatedAt, &tags)
+		var tags sql.NullString
+		err = rows.Scan(&b.Id, &b.Name, &b.Description, &b.Content, &b.Project, &b.CreatedAt, &b.UpdatedAt, &tags)
 		if err != nil {
 			logrus.Errorf("Scan rows failed: %v", err)
 		}
-		if len(tags) > 0 {
-			t := strings.Split(tags, ",")
+		if tags.String != "" {
+			t := strings.Split(tags.String, ",")
 			b.Tags = t
 		}
 		bookmarks = append(bookmarks, &b)
@@ -137,13 +139,16 @@ ORDER BY tags.name ASC;
 	results := &map[string]int{}
 
 	for rows.Next() {
-		var tag string
+		var tag sql.NullString
 		var count int
 		err = rows.Scan(&tag, &count)
 		if err != nil {
 			logrus.Error("Error scanning row: %v", err)
 		}
-		(*results)[tag] = count
+
+		if tag.String != "" {
+			(*results)[tag.String] = count
+		}
 	}
 	return results, nil
 }
@@ -157,4 +162,35 @@ VALUES (?,?,?,?,?,?,?)`
 	_, err := d.conn.Exec(query, b.Name, b.LowerName, b.Description, b.Content, b.Project, b.CreatedAt, b.UpdatedAt)
 	return err
 
+}
+
+func (d *Database) GetBookmarkMetadata(bookmark *models.Bookmark) error {
+	query := `
+SELECT key, value FROM 
+metadata WHERE metadata.bookmark = ?
+ORDER BY metadata.bookmark ASC, 
+         metadata.key_lower ASC;
+`
+
+	rows, err := d.conn.Query(query, bookmark.Id)
+	if err != nil {
+		return err
+	}
+
+	bookmark.Metadata = &map[string]string{}
+	bookmark.MetadataKeys = &[]string{}
+
+	for rows.Next() {
+		var key string
+		var value string
+
+		err = rows.Scan(&key, &value)
+		if err != nil {
+			logrus.Errorf("scan rows: &v", err)
+		}
+
+		(*bookmark.Metadata)[key] = value
+		*bookmark.MetadataKeys = append(*bookmark.MetadataKeys, key)
+	}
+	return nil
 }

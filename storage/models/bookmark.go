@@ -36,6 +36,10 @@ type Bookmark struct {
 	UpdatedAt   time.Time `db:"updated_at"`
 
 	Tags []string
+	//Metadata key-values. Not in order
+	Metadata *map[string]string
+	//MetadataKeys provides ordered collection of keys
+	MetadataKeys *[]string
 }
 
 //Return domain of the content if it is a link

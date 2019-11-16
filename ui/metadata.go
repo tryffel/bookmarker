@@ -52,6 +52,8 @@ type Metadata struct {
 	defaultFields      map[string]*tview.InputField
 	defaultFieldsArray []*tview.InputField
 
+	customFields *map[string]*tview.InputField
+
 	doneFunc func(save bool, bookmark *models.Bookmark)
 }
 
@@ -136,8 +138,10 @@ func NewMetadata(doneFunc func(save bool, bookmark *models.Bookmark)) *Metadata 
 func (m *Metadata) setData(bookmark *models.Bookmark) {
 	m.bookmark = bookmark
 	m.form.Clear(true)
+	m.customFields = &map[string]*tview.InputField{}
 	m.initDefaults()
 	m.setFields(m.bookmark)
+	m.initCustomFields()
 	m.initButtons()
 }
 
@@ -169,4 +173,20 @@ func (m *Metadata) initDefaults() {
 
 func (m *Metadata) initButtons() {
 	m.form.AddButton("Edit", m.toggleEdit)
+}
+
+func (m *Metadata) initCustomFields() {
+	if len(*m.bookmark.Metadata) == 0 {
+		return
+	}
+
+	for _, key := range *m.bookmark.MetadataKeys {
+
+		(*m.customFields)[key] = tview.NewInputField().SetLabel(key).SetText((*m.bookmark.Metadata)[key])
+		m.form.AddFormItem((*m.customFields)[key])
+	}
+}
+
+func (m *Metadata) editEnabled(text string, last rune) bool {
+	return m.enableEdit
 }

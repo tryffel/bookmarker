@@ -32,6 +32,11 @@ var BookmarkerMigrations = []Migrator{
 		Level:  1,
 		Schema: v1,
 	},
+	&Migration{
+		Name:   "add metadata",
+		Level:  2,
+		Schema: v2,
+	},
 }
 
 type Schema struct {
@@ -112,6 +117,7 @@ CREATE TABLE "schemas" (
 		}
 		lastLevel = v.MLevel()
 	}
+	logrus.Warning("Migrations ok")
 	return nil
 }
 

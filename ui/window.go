@@ -231,7 +231,13 @@ func (w *Window) openMetadata() {
 	index, _ := w.bookmarks.table.GetSelection()
 	bookmark := w.bookmarks.items[index-1]
 
-	w.app.QueueUpdateDraw(func() { w.metadata.setData(bookmark) })
+	w.app.QueueUpdateDraw(func() {
+		err := w.db.GetBookmarkMetadata(bookmark)
+		if err != nil {
+			logrus.Errorf("Get metadata: %v", err)
+		}
+		w.metadata.setData(bookmark)
+	})
 	w.metadataOpen = true
 }
 
