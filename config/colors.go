@@ -113,7 +113,7 @@ func defaultColorBookmarks() ColorBookmarks {
 		BackgroundSelected: tcell.Color23,
 		Text:               tcell.Color252,
 		TextSelected:       tcell.Color253,
-		HeaderText:         tcell.Color23,
+		HeaderText:         tcell.Color180,
 		HeaderBackground:   tcell.Color235,
 	}
 }

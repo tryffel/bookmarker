@@ -31,6 +31,8 @@ type Projects struct {
 func NewProjects() *Projects {
 	p := &Projects{tree: tview.NewTreeView()}
 	colors := config.Configuration.Colors.Projects
+	p.tree.SetTitle("Projects")
+	p.tree.SetTitleColor(colors.Text)
 	p.tree.SetBorder(true)
 	p.tree.SetBorderColor(config.Configuration.Colors.Border)
 	p.tree.SetBackgroundColor(colors.Background)
