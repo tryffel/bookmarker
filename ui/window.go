@@ -37,6 +37,7 @@ type Window struct {
 
 	navBar    *twidgets.NavBar
 	project   *Projects
+	tags      *Tags
 	bookmarks *BookmarkTable
 
 	help         *modals.Help
@@ -78,6 +79,7 @@ func NewWindow(colors config.Colors, shortcuts *config.Shortcuts) *Window {
 		layout:    twidgets.NewModalLayout(),
 		grid:      tview.NewGrid(),
 		project:   NewProjects(),
+		tags:      NewTags(),
 		bookmarks: NewBookmarkTable(),
 		help:      modals.NewHelp(),
 	}
@@ -105,8 +107,9 @@ func NewWindow(colors config.Colors, shortcuts *config.Shortcuts) *Window {
 	w.grid.AddItem(w.navBar, 0, 0, 1, 1, 1, 10, false)
 	w.grid.AddItem(w.layout, 1, 0, 1, 1, 4, 4, true)
 
-	w.layout.Grid().AddItem(w.project, 0, 0, 6, 2, 5, 5, false)
-	w.layout.Grid().AddItem(w.bookmarks, 0, 2, 5, 4, 10, 10, true)
+	w.layout.Grid().AddItem(w.project, 0, 0, 3, 2, 5, 5, false)
+	w.layout.Grid().AddItem(w.tags, 3, 0, 3, 2, 5, 5, false)
+	w.layout.Grid().AddItem(w.bookmarks, 0, 2, 6, 4, 10, 10, true)
 	return w
 }
 

@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
+	"strings"
 	"tryffel.net/pkg/bookmarker/config"
 	"tryffel.net/pkg/bookmarker/storage/models"
 )
@@ -63,6 +64,9 @@ func (b *BookmarkTable) GetFocusable() tview.Focusable {
 }
 
 func (b *BookmarkTable) SetData(data []*models.Bookmark) {
+	if data == nil {
+		return
+	}
 	b.items = data
 
 	b.table.Clear()
@@ -70,7 +74,8 @@ func (b *BookmarkTable) SetData(data []*models.Bookmark) {
 	b.table.SetCell(0, 1, tableHeaderCell("Name"))
 	b.table.SetCell(0, 2, tableHeaderCell("Description"))
 	b.table.SetCell(0, 3, tableHeaderCell("Link"))
-	b.table.SetCell(0, 4, tableHeaderCell("Added at"))
+	b.table.SetCell(0, 4, tableHeaderCell("Tags"))
+	b.table.SetCell(0, 5, tableHeaderCell("Added at"))
 	b.table.SetOffset(1, 0)
 
 	for i, v := range data {
@@ -78,7 +83,15 @@ func (b *BookmarkTable) SetData(data []*models.Bookmark) {
 		b.table.SetCell(i+1, 1, tableCell(v.Name))
 		b.table.SetCell(i+1, 2, tableCell(v.Description))
 		b.table.SetCell(i+1, 3, tableCell(v.Content))
-		b.table.SetCell(i+1, 4, tableCell(v.CreatedAt.Format("2006-01-02 15:04")))
+		t := ""
+		tags := tableCell(t)
+		if len(v.Tags) > 0 {
+			t = strings.Join(v.Tags, ", ")
+			tags.SetText(t)
+			tags.SetTextColor(config.Configuration.Colors.Tags.Text)
+		}
+		b.table.SetCell(i+1, 4, tags)
+		b.table.SetCell(i+1, 5, tableCell(v.CreatedAt.Format("2006-01-02 15:04")))
 	}
 
 	b.table.Select(1, 0)

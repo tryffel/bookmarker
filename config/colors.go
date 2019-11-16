@@ -40,6 +40,7 @@ type Colors struct {
 	Bookmarks           ColorBookmarks
 	Projects            ColorProjects
 	BookmarkForm        ColorBookmarkForm
+	Tags                ColorTags
 }
 
 func defaultColors() Colors {
@@ -56,6 +57,7 @@ func defaultColors() Colors {
 		Bookmarks:           defaultColorBookmarks(),
 		Projects:            defaultColorProjects(),
 		BookmarkForm:        defaultColorBookmarkform(),
+		Tags:                defaultColorTags(),
 	}
 }
 
@@ -150,4 +152,25 @@ func defaultColorBookmarkform() ColorBookmarkForm {
 		TextSelected:   tcell.Color23,
 		TextBackground: tcell.Color235,
 	}
+}
+
+type ColorTags struct {
+	Background         tcell.Color
+	BackgroundSelected tcell.Color
+	Text               tcell.Color
+	TextSelected       tcell.Color
+	EmptyTag           tcell.Color
+	Count              tcell.Color
+}
+
+func defaultColorTags() ColorTags {
+	return ColorTags{
+		Background:         colorBackground,
+		BackgroundSelected: tcell.Color23,
+		Text:               tcell.Color228,
+		TextSelected:       tcell.Color252,
+		EmptyTag:           tcell.Color247,
+		Count:              tcell.Color187,
+	}
+
 }

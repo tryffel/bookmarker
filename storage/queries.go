@@ -19,37 +19,60 @@
 
 package storage
 
-import "tryffel.net/pkg/bookmarker/storage/models"
+import (
+	"github.com/sirupsen/logrus"
+	"strings"
+	"tryffel.net/pkg/bookmarker/storage/models"
+)
 
 type project struct {
 	Project string `db:"project"`
 }
 
+//name is any query result that has field 'Name'
+type name struct {
+	Name string `db:"name"`
+}
+
 func (d *Database) GetAllBookmarks() ([]*models.Bookmark, error) {
 	query := `
-SELECT name, description, content, project, created_at, updated_at
-FROM bookmarks
-ORDER BY lower_name ASC
-LIMIT 100;`
+SELECT
+    b.name AS name, 
+    b.description AS description, 
+    b.content as content, 
+    b.project AS project, 
+    b.created_at AS created_at,
+    GROUP_CONCAT(t.name) AS tags
+FROM bookmarks b
+LEFT JOIN bookmark_tags bt ON b.id = bt.bookmark
+LEFT JOIN tags t ON bt.tag = t.id
+GROUP BY b.id
+ORDER BY b.name ASC
+LIMIT 100;
+`
 
-	p := make([]models.Bookmark, 0)
-	err := d.conn.Select(&p, query)
+	rows, err := d.conn.Query(query)
 	if err != nil {
 		return nil, err
 	}
 
-	bookmarks := make([]models.Bookmark, 0, len(p))
-	ptrs := make([]*models.Bookmark, 0, len(p))
+	bookmarks := make([]*models.Bookmark, 0)
 
-	copy(bookmarks, p)
-
-	for i := 0; i < len(p); i++ {
-		bookmarks = append(bookmarks, p[i])
-		ptrs = append(ptrs, &p[i])
-		//ptrs[i] = &bookmarks[i]
+	for rows.Next() {
+		var b models.Bookmark
+		var tags string
+		err = rows.Scan(&b.Name, &b.Description, &b.Content, &b.Project, &b.CreatedAt, &tags)
+		if err != nil {
+			logrus.Errorf("Scan rows failed: %v", err)
+		}
+		if len(tags) > 0 {
+			t := strings.Split(tags, ",")
+			b.Tags = t
+		}
+		bookmarks = append(bookmarks, &b)
 	}
 
-	return ptrs, nil
+	return bookmarks, nil
 }
 
 //GetProjects gets all projects
@@ -84,6 +107,35 @@ FROM bookmarks`
 
 	projects := models.ParseTrees(strings)
 	return projects, nil
+}
+
+func (d *Database) GetTags() (*map[string]int, error) {
+	query := `
+SELECT
+       name,
+       COUNT(*) as count
+FROM tags
+LEFT JOIN bookmark_tags bt ON tags.id = bt.tag
+GROUP BY tags.name
+ORDER BY tags.name ASC;
+`
+	rows, err := d.conn.Query(query)
+	if err != nil {
+		return nil, nil
+	}
+
+	results := &map[string]int{}
+
+	for rows.Next() {
+		var tag string
+		var count int
+		err = rows.Scan(&tag, &count)
+		if err != nil {
+			logrus.Error("Error scanning row: %v", err)
+		}
+		(*results)[tag] = count
+	}
+	return results, nil
 }
 
 func (d *Database) NewBookmark(b *models.Bookmark) error {
