@@ -19,7 +19,11 @@
 
 package models
 
-import "time"
+import (
+	"net/url"
+	"strings"
+	"time"
+)
 
 type Bookmark struct {
 	Id          int
@@ -32,4 +36,31 @@ type Bookmark struct {
 	UpdatedAt   time.Time `db:"updated_at"`
 
 	Tags []string
+}
+
+//Return domain of the content if it is a link
+func (b *Bookmark) ContentDomain() string {
+
+	// url.prase rarely gives any error, however invalid domain isn't parsed and returns ""
+	Url, err := url.Parse(b.Content)
+	if err != nil {
+		return "not url"
+	}
+
+	return Url.Host
+}
+
+//TagsString retuns string representation of tags.
+//If spaces flag is set, put comma and space between tags
+// No tags -> "", tags -> "a, b"
+func (b *Bookmark) TagsString(spaces bool) string {
+	if len(b.Tags) == 0 {
+		return ""
+	}
+
+	separator := ","
+	if spaces {
+		separator += " "
+	}
+	return strings.Join(b.Tags, separator)
 }
