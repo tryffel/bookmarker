@@ -22,6 +22,8 @@ import (
 	"strings"
 )
 
+const TreeIndent = "   "
+
 type Project struct {
 	Name     string
 	Children []*Project
@@ -94,9 +96,11 @@ func (p *Project) parseSingle(nodes []string) bool {
 
 	// Try for existing children
 	for _, v := range p.Children {
-		if v.parseSingle(nodes[1:]) {
-			exists = true
-			break
+		if nodes[1] == v.Name {
+			if v.parseSingle(nodes[1:]) {
+				exists = true
+				break
+			}
 		}
 	}
 	// Create new child
@@ -117,4 +121,32 @@ func (p *Project) parseSingle(nodes []string) bool {
 		return false
 	}
 	return true
+}
+
+func (p *Project) PrintChildren() string {
+	text := strings.Join(p.printChildren(0), "\n")
+	return text
+}
+
+func (p *Project) printChildren(indent int) []string {
+	text := p.Name
+	ind := ""
+	for i := 0; i < indent; i++ {
+		ind += TreeIndent
+	}
+
+	if indent > 0 {
+		text = ind + text
+	}
+
+	if len(p.Children) == 0 {
+		return []string{text}
+	}
+
+	children := []string{}
+	for _, v := range p.Children {
+		children = append(children, v.printChildren(indent+1)...)
+	}
+
+	return append([]string{text}, children...)
 }

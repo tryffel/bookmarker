@@ -21,62 +21,6 @@ import (
 	"testing"
 )
 
-func TestParseProject(t *testing.T) {
-	object := &Project{
-		Name:     "object",
-		Children: nil,
-		Parent:   nil,
-	}
-	a := &Project{
-		Name:     "a",
-		Children: nil,
-		Parent:   object,
-	}
-	b := &Project{
-		Name:     "b",
-		Children: nil,
-		Parent:   object,
-	}
-	ac := &Project{
-		Name:     "c",
-		Children: nil,
-		Parent:   a,
-	}
-
-	ab := &Project{
-		Name:     "b",
-		Children: nil,
-		Parent:   a,
-	}
-
-	bc := &Project{
-		Name:     "c",
-		Children: nil,
-		Parent:   b,
-	}
-
-	object.Children = []*Project{a, b}
-	a.Children = []*Project{ab, ac}
-	b.Children = []*Project{bc}
-
-	tests := []struct {
-		name string
-		text []string
-		want []*Project
-	}{{
-		text: []string{"object.a.b", "object.b.c", "object.a.c"},
-		want: []*Project{object},
-	},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := ParseTrees(tt.text); !reflect.DeepEqual(&got, &tt.want) {
-				t.Errorf("ParseProject() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestProject_String(t *testing.T) {
 	projects := ParseTrees([]string{"project.test.a"})
 
@@ -149,6 +93,36 @@ func TestProject_sortChildren(t *testing.T) {
 
 			}
 
+		})
+	}
+}
+
+//This also tests ParseTree
+func TestProject_PrintChildren(t *testing.T) {
+	tests := []struct {
+		name  string
+		input []string
+		want  string
+	}{
+		{
+			input: []string{"project.a.b", "project.a.c", "project.b.c"},
+			want:  "project\n   a\n      b\n      c\n   b\n      c",
+		},
+		{
+			input: []string{"project.a.b", "project.a.b.c.d"},
+			want: `project
+   a
+      b
+         c
+            d`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := ParseTrees(tt.input)[0]
+			if got := p.PrintChildren(); got != tt.want {
+				t.Errorf("PrintChildren() = %v, want %v", got, tt.want)
+			}
 		})
 	}
 }
