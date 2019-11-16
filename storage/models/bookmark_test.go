@@ -37,7 +37,7 @@ func TestBookmark_ContentDomain(t *testing.T) {
 		{
 			name:   "invalid url",
 			fields: fields{Content: "https://tes t.net/some/blog?a=1"},
-			want:   "",
+			want:   "not url",
 		},
 	}
 	for _, tt := range tests {
