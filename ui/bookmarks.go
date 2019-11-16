@@ -95,7 +95,7 @@ func (b *BookmarkTable) SetData(data []*models.Bookmark) {
 		tags := tableCell(v.TagsString(true))
 		tags.SetTextColor(config.Configuration.Colors.Tags.Text)
 		b.table.SetCell(i+1, 4, tags)
-		b.table.SetCell(i+1, 5, tableCell(v.CreatedAt.Format("2006-01-02 15:04")))
+		b.table.SetCell(i+1, 5, tableCell(ShortTimeSince(v.CreatedAt)))
 	}
 
 	b.table.Select(1, 0)
