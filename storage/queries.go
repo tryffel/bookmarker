@@ -42,6 +42,7 @@ SELECT
     b.content as content, 
     b.project AS project, 
     b.created_at AS created_at,
+    b.updated_at AS updated_at,
     GROUP_CONCAT(t.name) AS tags
 FROM bookmarks b
 LEFT JOIN bookmark_tags bt ON b.id = bt.bookmark
@@ -61,7 +62,7 @@ LIMIT 100;
 	for rows.Next() {
 		var b models.Bookmark
 		var tags string
-		err = rows.Scan(&b.Name, &b.Description, &b.Content, &b.Project, &b.CreatedAt, &tags)
+		err = rows.Scan(&b.Name, &b.Description, &b.Content, &b.Project, &b.CreatedAt, &b.UpdatedAt, &tags)
 		if err != nil {
 			logrus.Errorf("Scan rows failed: %v", err)
 		}

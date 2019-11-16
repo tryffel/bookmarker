@@ -40,19 +40,15 @@ type Application struct {
 
 func NewApplication(colors config.Colors, shortcuts *config.Shortcuts, db *storage.Database) *Application {
 	a := &Application{
-		app:    tview.NewApplication(),
-		window: NewWindow(colors, shortcuts),
+		window: NewWindow(colors, shortcuts, db),
 		db:     db,
 	}
 
-	a.app.SetRoot(a.window, true)
-	a.app.SetInputCapture(a.inputCapture)
-	a.window.createFunc = a.createBookmark
 	return a
 }
 
 func (a *Application) Run() error {
-	err := a.app.Run()
+	err := a.window.app.Run()
 	return err
 }
 

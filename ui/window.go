@@ -22,6 +22,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"tryffel.net/go/twidgets"
 	"tryffel.net/pkg/bookmarker/config"
+	"tryffel.net/pkg/bookmarker/storage"
 	"tryffel.net/pkg/bookmarker/storage/models"
 	"tryffel.net/pkg/bookmarker/ui/modals"
 )
@@ -30,6 +31,9 @@ var navBarLabels = make([]string, 0)
 var navBarShortucts = make([]tcell.Key, 0)
 
 type Window struct {
+	app *tview.Application
+	db  *storage.Database
+
 	layout   *twidgets.ModalLayout
 	grid     *tview.Grid
 	gridAxis []int
@@ -39,11 +43,18 @@ type Window struct {
 	project   *Projects
 	tags      *Tags
 	bookmarks *BookmarkTable
+	metadata  *Metadata
 
 	help         *modals.Help
 	bookmarkForm *modals.BookmarkForm
 
+	hasModal  bool
+	modal     twidgets.Modal
+	lastFocus tview.Primitive
+
 	createFunc func(bookmark *models.Bookmark)
+
+	metadataOpen bool
 }
 
 func (w *Window) Draw(screen tcell.Screen) {
@@ -59,7 +70,58 @@ func (w *Window) SetRect(x, y, width, height int) {
 }
 
 func (w *Window) InputHandler() func(event *tcell.EventKey, setFocus func(p tview.Primitive)) {
-	return w.grid.InputHandler()
+	return func(event *tcell.EventKey, setFocus func(p tview.Primitive)) {
+		//key := event.Key()
+		//if key == tcell.KeyCtrlSpace {
+		//	w.openMetadata()
+		//} else {
+		w.grid.InputHandler()(event, setFocus)
+		//}
+	}
+}
+
+func (w *Window) inputCapture(event *tcell.EventKey) *tcell.EventKey {
+	navbar := config.Configuration.Shortcuts.NavBar
+	key := event.Key()
+	switch key {
+	case navbar.Menu:
+	case navbar.Help:
+		if !w.hasModal {
+			w.addModal(w.help, 10, 40, true)
+			w.help.Update()
+		}
+	case navbar.NewBookmark:
+		w.addModal(w.bookmarkForm, 10, 40, false)
+	case tcell.KeyEscape:
+		if w.hasModal {
+			w.layout.RemoveModal(w.modal)
+			w.app.SetFocus(w.lastFocus)
+			w.lastFocus = nil
+			w.modal = nil
+			w.hasModal = false
+		} else if w.metadataOpen {
+			w.closeMetadata(false, nil)
+		}
+	case tcell.KeyCtrlSpace:
+		if !w.metadataOpen || !w.hasModal {
+			w.openMetadata()
+		}
+	default:
+		return event
+	}
+	return nil
+
+}
+
+func (w *Window) addModal(modal twidgets.Modal, h, width uint, lockSize bool) {
+	if !w.hasModal {
+		w.layout.AddModal(modal, h, width, lockSize)
+
+		w.lastFocus = w.app.GetFocus()
+		w.app.SetFocus(modal)
+		w.modal = w.bookmarkForm
+		w.hasModal = true
+	}
 }
 
 func (w *Window) Focus(delegate func(p tview.Primitive)) {
@@ -71,18 +133,31 @@ func (w *Window) Blur() {
 }
 
 func (w *Window) GetFocusable() tview.Focusable {
-	return w.grid.GetFocusable()
+	return w.layout.GetFocusable()
 }
 
-func NewWindow(colors config.Colors, shortcuts *config.Shortcuts) *Window {
+//func (w *Window) HasFocus() bool {
+//	return w.layout
+//	focus :=  w.grid.HasFocus() || w.layout.GetFocusable().HasFocus()
+//	return focus
+//}
+
+func NewWindow(colors config.Colors, shortcuts *config.Shortcuts, db *storage.Database) *Window {
 	w := &Window{
-		layout:    twidgets.NewModalLayout(),
-		grid:      tview.NewGrid(),
-		project:   NewProjects(),
-		tags:      NewTags(),
-		bookmarks: NewBookmarkTable(),
-		help:      modals.NewHelp(),
+		app:     tview.NewApplication(),
+		db:      db,
+		layout:  twidgets.NewModalLayout(),
+		grid:    tview.NewGrid(),
+		project: NewProjects(),
+		tags:    NewTags(),
+		help:    modals.NewHelp(),
 	}
+
+	w.app.SetRoot(w, true)
+	w.app.SetInputCapture(w.inputCapture)
+
+	w.bookmarks = NewBookmarkTable(w.openBookmark)
+	w.metadata = NewMetadata(w.closeMetadata)
 
 	w.bookmarkForm = modals.NewBookmarkForm(w.createBookmark)
 	w.grid.SetBackgroundColor(colors.Background)
@@ -93,6 +168,8 @@ func NewWindow(colors config.Colors, shortcuts *config.Shortcuts) *Window {
 	w.grid.SetMinSize(2, 2)
 
 	col := colors.NavBar.ToNavBar()
+
+	w.metadata = NewMetadata(w.closeMetadata)
 	w.navBar = twidgets.NewNavBar(col, w.navBarClicked)
 	navBarLabels = []string{"Help", "New Bookmark", "Menu", "Quit"}
 
@@ -110,6 +187,9 @@ func NewWindow(colors config.Colors, shortcuts *config.Shortcuts) *Window {
 	w.layout.Grid().AddItem(w.project, 0, 0, 3, 2, 5, 5, false)
 	w.layout.Grid().AddItem(w.tags, 3, 0, 3, 2, 5, 5, false)
 	w.layout.Grid().AddItem(w.bookmarks, 0, 2, 6, 4, 10, 10, true)
+
+	w.app.SetFocus(w.bookmarks)
+
 	return w
 }
 
@@ -118,9 +198,61 @@ func (w *Window) navBarClicked(label string) {
 
 }
 
-func (w *Window) createBookmark(b *models.Bookmark) {
-	if w.createFunc != nil {
-		w.createFunc(b)
+func (w *Window) closeMetadata(save bool, bookmark *models.Bookmark) {
+	if !save {
+		w.layout.Grid().RemoveItem(w.bookmarks)
+		w.layout.Grid().AddItem(w.bookmarks, 0, 2, 6, 4, 10, 10, true)
+		w.layout.Grid().AddItem(w.project, 0, 0, 3, 2, 5, 5, false)
+		w.layout.Grid().AddItem(w.tags, 3, 0, 3, 2, 5, 5, false)
+	}
+	w.app.SetFocus(w.lastFocus)
+	w.lastFocus = nil
+	w.metadataOpen = false
+}
 
+func (w *Window) openBookmark(b *models.Bookmark) {
+	w.openMetadata()
+	w.metadata.setData(b)
+}
+
+func (w *Window) openMetadata() {
+	w.lastFocus = w.app.GetFocus()
+	w.app.SetFocus(w.metadata)
+
+	//w.grid.Blur()
+	//w.metadata.Focus(func(p tview.Primitive){})
+	w.layout.Grid().RemoveItem(w.bookmarks)
+	w.layout.Grid().RemoveItem(w.project)
+	w.layout.Grid().RemoveItem(w.tags)
+
+	w.layout.Grid().AddItem(w.bookmarks, 0, 0, 6, 4, 10, 10, false)
+	w.layout.Grid().AddItem(w.metadata, 0, 4, 6, 2, 10, 10, true)
+
+	index, _ := w.bookmarks.table.GetSelection()
+	bookmark := w.bookmarks.items[index-1]
+
+	w.app.QueueUpdateDraw(func() { w.metadata.setData(bookmark) })
+	w.metadataOpen = true
+}
+
+func (w *Window) createBookmark(bookmark *models.Bookmark) {
+	logrus.Info("Got new bookmark: ", bookmark)
+
+	err := w.db.NewBookmark(bookmark)
+	if err != nil {
+		logrus.Error("Failed to create bookmark: ", err)
+	} else {
+		bookmarks, err := w.db.GetAllBookmarks()
+		if err != nil {
+			return
+		}
+		w.bookmarks.SetData(bookmarks)
+		if w.hasModal {
+			w.layout.RemoveModal(w.modal)
+			w.app.SetFocus(w.lastFocus)
+			w.lastFocus = nil
+			w.modal = nil
+			w.hasModal = false
+		}
 	}
 }

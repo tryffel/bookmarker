@@ -41,6 +41,7 @@ type Colors struct {
 	Projects            ColorProjects
 	BookmarkForm        ColorBookmarkForm
 	Tags                ColorTags
+	Metadata            ColorMetadata
 }
 
 func defaultColors() Colors {
@@ -58,6 +59,7 @@ func defaultColors() Colors {
 		Projects:            defaultColorProjects(),
 		BookmarkForm:        defaultColorBookmarkform(),
 		Tags:                defaultColorTags(),
+		Metadata:            defaultColorMetadata(),
 	}
 }
 
@@ -171,6 +173,27 @@ func defaultColorTags() ColorTags {
 		TextSelected:       tcell.Color252,
 		EmptyTag:           tcell.Color247,
 		Count:              tcell.Color187,
+	}
+
+}
+
+type ColorMetadata struct {
+	Background     tcell.Color
+	Label          tcell.Color
+	Text           tcell.Color
+	TextSelected   tcell.Color
+	TextBackground tcell.Color
+	TextEdited     tcell.Color
+}
+
+func defaultColorMetadata() ColorMetadata {
+	return ColorMetadata{
+		Background:     colorBackground,
+		Label:          tcell.Color252,
+		Text:           tcell.Color187,
+		TextSelected:   tcell.Color23,
+		TextBackground: tcell.Color235,
+		TextEdited:     tcell.Color187,
 	}
 
 }

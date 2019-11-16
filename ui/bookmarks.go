@@ -20,15 +20,15 @@ import (
 	"fmt"
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
-	"strings"
 	"tryffel.net/pkg/bookmarker/config"
 	"tryffel.net/pkg/bookmarker/storage/models"
 )
 
 type BookmarkTable struct {
-	table    *tview.Table
-	items    []*models.Bookmark
-	hasFocus bool
+	table        *tview.Table
+	items        []*models.Bookmark
+	hasFocus     bool
+	metadataFunc func(bookmark *models.Bookmark)
 }
 
 func (b *BookmarkTable) Draw(screen tcell.Screen) {
@@ -44,7 +44,16 @@ func (b *BookmarkTable) SetRect(x, y, width, height int) {
 }
 
 func (b *BookmarkTable) InputHandler() func(event *tcell.EventKey, setFocus func(p tview.Primitive)) {
-	return b.table.InputHandler()
+	return func(event *tcell.EventKey, setFocus func(p tview.Primitive)) {
+		key := event.Key()
+		if key == tcell.KeyCtrlSpace {
+			selected, _ := b.table.GetSelection()
+			bookmark := b.items[selected]
+			b.metadataFunc(bookmark)
+		} else {
+			b.table.InputHandler()(event, setFocus)
+		}
+	}
 }
 
 func (b *BookmarkTable) Focus(delegate func(p tview.Primitive)) {
@@ -82,14 +91,9 @@ func (b *BookmarkTable) SetData(data []*models.Bookmark) {
 		b.table.SetCell(i+1, 0, tableCell(fmt.Sprint(i+1)))
 		b.table.SetCell(i+1, 1, tableCell(v.Name))
 		b.table.SetCell(i+1, 2, tableCell(v.Description))
-		b.table.SetCell(i+1, 3, tableCell(v.Content))
-		t := ""
-		tags := tableCell(t)
-		if len(v.Tags) > 0 {
-			t = strings.Join(v.Tags, ", ")
-			tags.SetText(t)
-			tags.SetTextColor(config.Configuration.Colors.Tags.Text)
-		}
+		b.table.SetCell(i+1, 3, tableCell(v.ContentDomain()))
+		tags := tableCell(v.TagsString(true))
+		tags.SetTextColor(config.Configuration.Colors.Tags.Text)
 		b.table.SetCell(i+1, 4, tags)
 		b.table.SetCell(i+1, 5, tableCell(v.CreatedAt.Format("2006-01-02 15:04")))
 	}
@@ -113,10 +117,11 @@ func tableHeaderCell(text string) *tview.TableCell {
 	return c
 }
 
-func NewBookmarkTable() *BookmarkTable {
+func NewBookmarkTable(openMetadata func(bookmark *models.Bookmark)) *BookmarkTable {
 	b := &BookmarkTable{
-		table: tview.NewTable(),
-		items: []*models.Bookmark{},
+		table:        tview.NewTable(),
+		items:        []*models.Bookmark{},
+		metadataFunc: openMetadata,
 	}
 
 	colors := config.Configuration.Colors.Bookmarks
