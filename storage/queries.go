@@ -90,7 +90,7 @@ func (d *Database) NewBookmark(b *models.Bookmark) error {
 	query := `
 INSERT INTO 
 bookmarks (name, lower_name, description, content, project, created_at, updated_at) 
-VALUES ($1,$2,$3,$3,$4,$5,$6)`
+VALUES (?,?,?,?,?,?,?)`
 
 	_, err := d.conn.Exec(query, b.Name, b.LowerName, b.Description, b.Content, b.Project, b.CreatedAt, b.UpdatedAt)
 	return err
