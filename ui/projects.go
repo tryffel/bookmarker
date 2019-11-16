@@ -17,6 +17,7 @@
 package ui
 
 import (
+	"fmt"
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
 	"tryffel.net/pkg/bookmarker/config"
@@ -77,7 +78,7 @@ func (p *Projects) SetData(projects []*models.Project) {
 
 	// Root nodes
 	for _, root := range projects {
-		rootItem := newTreeNode(root.Name)
+		rootItem := newTreeNode(fmt.Sprintf("%s %d", root.Name, root.TotalCount()))
 		addTree(root, rootItem)
 		top.AddChild(rootItem)
 	}
@@ -87,7 +88,8 @@ func (p *Projects) SetData(projects []*models.Project) {
 
 // Add tree adds recursive tree to node
 func addTree(project *models.Project, node *tview.TreeNode) {
-	node.SetText(project.Name)
+	node.SetText(fmt.Sprintf("%s %d", project.Name, project.TotalCount()))
+	node.SetColor(config.Configuration.Colors.Projects.Text)
 	if project.Children == nil {
 		return
 	}

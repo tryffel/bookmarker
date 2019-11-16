@@ -22,7 +22,7 @@ import (
 )
 
 func TestProject_String(t *testing.T) {
-	projects := ParseTrees([]string{"project.test.a"})
+	projects := ParseTrees([]string{"project.test.a"}, []int{5})
 
 	tests := []struct {
 		name    string
@@ -100,16 +100,19 @@ func TestProject_sortChildren(t *testing.T) {
 //This also tests ParseTree
 func TestProject_PrintChildren(t *testing.T) {
 	tests := []struct {
-		name  string
-		input []string
-		want  string
+		name   string
+		input  []string
+		counts []int
+		want   string
 	}{
 		{
-			input: []string{"project.a.b", "project.a.c", "project.b.c"},
-			want:  "project\n   a\n      b\n      c\n   b\n      c",
+			input:  []string{"project.a.b", "project.a.c", "project.b.c"},
+			counts: []int{1, 1, 1},
+			want:   "project\n   a\n      b\n      c\n   b\n      c",
 		},
 		{
-			input: []string{"project.a.b", "project.a.b.c.d"},
+			input:  []string{"project.a.b", "project.a.b.c.d"},
+			counts: []int{1, 1, 1},
 			want: `project
    a
       b
@@ -119,9 +122,40 @@ func TestProject_PrintChildren(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := ParseTrees(tt.input)[0]
+			p := ParseTrees(tt.input, tt.counts)[0]
 			if got := p.PrintChildren(); got != tt.want {
 				t.Errorf("PrintChildren() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestProject_TotalCount(t *testing.T) {
+	tests := []struct {
+		name    string
+		strings []string
+		counts  []int
+		want    int
+	}{
+		{
+			name:    "1-node",
+			strings: []string{"project"},
+			counts:  []int{10},
+			want:    10,
+		},
+		{
+			name:    "3-nodes",
+			strings: []string{"project.a.b", "project.a.c", "project.a.a"},
+			counts:  []int{10, 10, 10},
+			want:    30,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			project := ParseTrees(tt.strings, tt.counts)[0]
+
+			if got := project.TotalCount(); got != tt.want {
+				t.Errorf("TotalCount() = %v, want %v", got, tt.want)
 			}
 		})
 	}

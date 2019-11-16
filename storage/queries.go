@@ -25,10 +25,6 @@ import (
 	"tryffel.net/pkg/bookmarker/storage/models"
 )
 
-type project struct {
-	Project string `db:"project"`
-}
-
 //name is any query result that has field 'Name'
 type name struct {
 	Name string `db:"name"`
@@ -83,8 +79,10 @@ LIMIT 100;
 // If name == "", get all projects
 func (d *Database) GetProjects(name string, strict bool) ([]*models.Project, error) {
 	query := `
-SELECT DISTINCT(project) as project
-FROM bookmarks`
+SELECT 
+    project,
+	count(*) as count
+FROM bookmarks `
 
 	if name != "" {
 		query += " WHERE project "
@@ -95,18 +93,29 @@ FROM bookmarks`
 		}
 	}
 
-	p := []project{}
-	err := d.conn.Select(&p, query, name)
+	query += " GROUP BY project ORDER BY project ASC;"
+
+	rows, err := d.conn.Query(query, name)
 	if err != nil {
 		return nil, err
 	}
 
-	strings := make([]string, len(p))
-	for i, v := range p {
-		strings[i] = v.Project
+	strings := make([]string, 0)
+	counts := make([]int, 0)
+
+	for rows.Next() {
+		var project = ""
+		var count = 0
+
+		err := rows.Scan(&project, &count)
+		if err != nil {
+			logrus.Errorf("scan rows: %v", err)
+		}
+		strings = append(strings, project)
+		counts = append(counts, count)
 	}
 
-	projects := models.ParseTrees(strings)
+	projects := models.ParseTrees(strings, counts)
 	return projects, nil
 }
 

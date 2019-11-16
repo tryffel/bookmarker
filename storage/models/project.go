@@ -18,6 +18,7 @@ package models
 
 import (
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"sort"
 	"strings"
 )
@@ -28,6 +29,7 @@ type Project struct {
 	Name     string
 	Children []*Project
 	Parent   *Project
+	Count    int
 }
 
 func NewProject(name string) *Project {
@@ -68,12 +70,29 @@ func (p *Project) sortChildren(recurse bool) {
 	}
 }
 
-func ParseTrees(data []string) []*Project {
+func (p *Project) TotalCount() int {
+	count := p.Count
+
+	for _, v := range p.Children {
+		count += v.TotalCount()
+	}
+	return count
+}
+
+// ParseTrees parses array if strings and array of counts into tree of projects
+// Data: e.g. ["project.a", "project.b", "project.a.b.c"]
+// Count: e.g. [10,10,10]
+func ParseTrees(data []string, counts []int) []*Project {
+	if len(data) != len(counts) {
+		logrus.Warningf("parse trees data and counts length does not match, ignore counts")
+		counts = make([]int, len(data))
+	}
+
 	root := NewProject("root")
-	for _, v := range data {
+	for i, v := range data {
 		text := strings.Split(v, ".")
 		text = append([]string{"root"}, text...)
-		ok := root.parseSingle(text)
+		ok := root.parseSingle(text, counts[i])
 		if !ok {
 			fmt.Printf("%s failed", v)
 		}
@@ -84,12 +103,16 @@ func ParseTrees(data []string) []*Project {
 	return root.Children
 }
 
-func (p *Project) parseSingle(nodes []string) bool {
+func (p *Project) parseSingle(nodes []string, count int) bool {
 	if len(nodes) == 0 {
 		return false
 	}
 	if len(nodes) == 1 {
-		return nodes[0] == p.Name
+		if nodes[0] == p.Name {
+			p.Count = count
+			return true
+		}
+		return false
 	}
 
 	exists := false
@@ -97,7 +120,7 @@ func (p *Project) parseSingle(nodes []string) bool {
 	// Try for existing children
 	for _, v := range p.Children {
 		if nodes[1] == v.Name {
-			if v.parseSingle(nodes[1:]) {
+			if v.parseSingle(nodes[1:], count) {
 				exists = true
 				break
 			}
@@ -113,7 +136,7 @@ func (p *Project) parseSingle(nodes []string) bool {
 		} else {
 			slice = []string{nodes[1]}
 		}
-		ok := child.parseSingle(slice)
+		ok := child.parseSingle(slice, count)
 		p.Children = append(p.Children, child)
 		if ok {
 			return true

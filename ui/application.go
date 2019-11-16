@@ -54,14 +54,13 @@ func (a *Application) Run() error {
 
 func (a *Application) Initdata() {
 	bookmarks, _ := a.db.GetAllBookmarks()
-	//projects, _ := a.db.GetProjects("", false)
+	projects, _ := a.db.GetProjects("", false)
 
 	tags, _ := a.db.GetTags()
 
 	a.window.bookmarks.SetData(bookmarks)
 	a.window.tags.SetData(tags)
-	//a.window.project.SetData(projects)
-
+	a.window.project.SetData(projects)
 }
 
 func (a *Application) inputCapture(eventKey *tcell.EventKey) *tcell.EventKey {
