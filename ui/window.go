@@ -39,11 +39,13 @@ type Window struct {
 	gridAxis []int
 	gridSize int
 
-	navBar    *twidgets.NavBar
-	project   *Projects
-	tags      *Tags
-	bookmarks *BookmarkTable
-	metadata  *Metadata
+	navBar     *twidgets.NavBar
+	project    *Projects
+	tags       *Tags
+	bookmarks  *BookmarkTable
+	metadata   *Metadata
+	search     *Search
+	searchOpen bool
 
 	help         *modals.Help
 	bookmarkForm *modals.BookmarkForm
@@ -101,11 +103,21 @@ func (w *Window) inputCapture(event *tcell.EventKey) *tcell.EventKey {
 			w.hasModal = false
 		} else if w.metadataOpen {
 			w.closeMetadata(false, nil)
+		} else if w.searchOpen {
+			w.app.SetFocus(w.lastFocus)
+			w.lastFocus = nil
+			w.searchOpen = false
 		}
 	case tcell.KeyCtrlSpace:
 		if !w.metadataOpen || !w.hasModal {
 			w.openMetadata()
 		}
+
+	case tcell.KeyCtrlD:
+		w.closeMetadata(false, nil)
+		w.lastFocus = w.app.GetFocus()
+		w.app.SetFocus(w.search)
+		w.searchOpen = true
 	default:
 		return event
 	}
@@ -161,6 +173,7 @@ func NewWindow(colors config.Colors, shortcuts *config.Shortcuts, db *storage.Da
 
 	w.bookmarkForm = modals.NewBookmarkForm(w.createBookmark)
 	w.grid.SetBackgroundColor(colors.Background)
+	w.search = NewSearch(w.Search)
 
 	w.gridSize = 6
 	w.grid.SetRows(1, -1)
@@ -186,7 +199,8 @@ func NewWindow(colors config.Colors, shortcuts *config.Shortcuts, db *storage.Da
 
 	w.layout.Grid().AddItem(w.project, 0, 0, 3, 2, 5, 5, false)
 	w.layout.Grid().AddItem(w.tags, 3, 0, 3, 2, 5, 5, false)
-	w.layout.Grid().AddItem(w.bookmarks, 0, 2, 6, 4, 10, 10, true)
+	w.layout.Grid().AddItem(w.bookmarks, 0, 2, 5, 4, 10, 10, true)
+	w.layout.Grid().AddItem(w.search, 5, 2, 1, 4, 1, 10, false)
 
 	w.app.SetFocus(w.bookmarks)
 
@@ -199,6 +213,9 @@ func (w *Window) navBarClicked(label string) {
 }
 
 func (w *Window) closeMetadata(save bool, bookmark *models.Bookmark) {
+	if !w.metadataOpen {
+		return
+	}
 	if !save {
 		w.layout.Grid().RemoveItem(w.bookmarks)
 		w.layout.Grid().AddItem(w.bookmarks, 0, 2, 6, 4, 10, 10, true)
@@ -261,4 +278,14 @@ func (w *Window) createBookmark(bookmark *models.Bookmark) {
 			w.hasModal = false
 		}
 	}
+}
+
+func (w *Window) Search(text string) {
+	bookmarks, err := w.db.SearchBookmarks(text)
+	if err != nil {
+		logrus.Errorf("Search bookmarks: %v", err)
+		return
+	}
+
+	w.bookmarks.SetData(bookmarks)
 }

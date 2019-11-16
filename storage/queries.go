@@ -194,3 +194,55 @@ ORDER BY metadata.bookmark ASC,
 	}
 	return nil
 }
+
+//SearchBookmarks searches both bookmarks table and additional metadata fields
+func (d *Database) SearchBookmarks(text string) ([]*models.Bookmark, error) {
+	text = "%" + text + "%"
+
+	query := `
+	SELECT
+	b.id as id,
+		b.name AS name,
+		b.description AS description,
+		b.content as content,
+		b.project AS project,
+		b.created_at AS created_at,
+		b.updated_at AS updated_at,
+		GROUP_CONCAT(t.name) AS tags
+	FROM bookmarks b
+		LEFT JOIN bookmark_tags bt ON b.id = bt.bookmark
+		LEFT JOIN tags t ON bt.tag = t.id
+	WHERE b.lower_name LIKE ?
+		OR b.description LIKE ?
+		OR b.content LIKE ?
+		OR b.project like ?
+	GROUP BY b.id
+	ORDER BY b.name ASC
+	LIMIT 100;
+`
+
+	rows, err := d.conn.Query(query, text, text, text, text)
+	if err != nil {
+		return nil, err
+	}
+
+	bookmarks := []*models.Bookmark{}
+
+	for rows.Next() {
+		var tag sql.NullString
+		b := models.Bookmark{}
+
+		err := rows.Scan(&b.Id, &b.Name, &b.Description, &b.Content, &b.Project, &b.CreatedAt, &b.UpdatedAt, &tag)
+		if err != nil {
+			logrus.Errorf("scan bookmark rows: %v", err)
+		}
+
+		if tag.String != "" {
+			b.Tags = strings.Split(tag.String, ",")
+		}
+
+		bookmarks = append(bookmarks, &b)
+	}
+
+	return bookmarks, nil
+}
