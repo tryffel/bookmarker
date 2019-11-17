@@ -91,7 +91,6 @@ func (a *Application) inputCapture(eventKey *tcell.EventKey) *tcell.EventKey {
 
 func (a *Application) addModal(modal twidgets.Modal, h, w uint, lockSize bool) {
 	if !a.hasModal {
-		a.window.layout.AddModal(modal, h, w, lockSize)
 
 		a.lastFocus = a.app.GetFocus()
 		a.app.SetFocus(modal)
