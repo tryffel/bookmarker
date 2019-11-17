@@ -89,11 +89,11 @@ func (w *Window) inputCapture(event *tcell.EventKey) *tcell.EventKey {
 	case navbar.Menu:
 	case navbar.Help:
 		if !w.hasModal {
-			w.addModal(w.help, 10, 40, true)
+			w.addModal(w.help, twidgets.ModalSizeMedium)
 			w.help.Update()
 		}
 	case navbar.NewBookmark:
-		w.addModal(w.bookmarkForm, 10, 40, false)
+		w.addModal(w.bookmarkForm, twidgets.ModalSizeMedium)
 	case tcell.KeyEscape:
 		if w.hasModal {
 			w.layout.RemoveModal(w.modal)
@@ -125,9 +125,9 @@ func (w *Window) inputCapture(event *tcell.EventKey) *tcell.EventKey {
 
 }
 
-func (w *Window) addModal(modal twidgets.Modal, h, width uint, lockSize bool) {
+func (w *Window) addModal(modal twidgets.Modal, size twidgets.ModalSize) {
 	if !w.hasModal {
-		w.layout.AddModal(modal, h, width, lockSize)
+		w.layout.AddDynamicModal(modal, size)
 
 		w.lastFocus = w.app.GetFocus()
 		w.app.SetFocus(modal)
@@ -147,12 +147,6 @@ func (w *Window) Blur() {
 func (w *Window) GetFocusable() tview.Focusable {
 	return w.layout.GetFocusable()
 }
-
-//func (w *Window) HasFocus() bool {
-//	return w.layout
-//	focus :=  w.grid.HasFocus() || w.layout.GetFocusable().HasFocus()
-//	return focus
-//}
 
 func NewWindow(colors config.Colors, shortcuts *config.Shortcuts, db *storage.Database) *Window {
 	w := &Window{
@@ -197,13 +191,8 @@ func NewWindow(colors config.Colors, shortcuts *config.Shortcuts, db *storage.Da
 	w.grid.AddItem(w.navBar, 0, 0, 1, 1, 1, 10, false)
 	w.grid.AddItem(w.layout, 1, 0, 1, 1, 4, 4, true)
 
-	w.layout.Grid().AddItem(w.project, 0, 0, 3, 2, 5, 5, false)
-	w.layout.Grid().AddItem(w.tags, 3, 0, 3, 2, 5, 5, false)
-	w.layout.Grid().AddItem(w.bookmarks, 0, 2, 5, 4, 10, 10, true)
-	w.layout.Grid().AddItem(w.search, 5, 2, 1, 4, 1, 10, false)
-
+	w.initDefaultLayout()
 	w.app.SetFocus(w.bookmarks)
-
 	return w
 }
 
@@ -217,14 +206,20 @@ func (w *Window) closeMetadata(save bool, bookmark *models.Bookmark) {
 		return
 	}
 	if !save {
-		w.layout.Grid().RemoveItem(w.bookmarks)
-		w.layout.Grid().AddItem(w.bookmarks, 0, 2, 6, 4, 10, 10, true)
-		w.layout.Grid().AddItem(w.project, 0, 0, 3, 2, 5, 5, false)
-		w.layout.Grid().AddItem(w.tags, 3, 0, 3, 2, 5, 5, false)
+		w.initDefaultLayout()
 	}
 	w.app.SetFocus(w.lastFocus)
 	w.lastFocus = nil
 	w.metadataOpen = false
+}
+
+func (w *Window) initDefaultLayout() {
+	w.layout.Grid().Clear()
+
+	w.layout.Grid().AddItem(w.project, 0, 0, 5, 1, 5, 5, false)
+	w.layout.Grid().AddItem(w.tags, 5, 0, 5, 1, 5, 5, false)
+	w.layout.Grid().AddItem(w.bookmarks, 0, 1, 9, 9, 10, 10, true)
+	w.layout.Grid().AddItem(w.search, 9, 1, 1, 9, 1, 10, false)
 }
 
 func (w *Window) openBookmark(b *models.Bookmark) {
@@ -242,8 +237,8 @@ func (w *Window) openMetadata() {
 	w.layout.Grid().RemoveItem(w.project)
 	w.layout.Grid().RemoveItem(w.tags)
 
-	w.layout.Grid().AddItem(w.bookmarks, 0, 0, 6, 4, 10, 10, false)
-	w.layout.Grid().AddItem(w.metadata, 0, 4, 6, 2, 10, 10, true)
+	w.layout.Grid().AddItem(w.bookmarks, 0, 0, 9, 7, 10, 10, false)
+	w.layout.Grid().AddItem(w.metadata, 0, 7, 9, 3, 10, 10, true)
 
 	index, _ := w.bookmarks.table.GetSelection()
 	bookmark := w.bookmarks.items[index-1]
