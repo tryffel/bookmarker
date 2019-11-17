@@ -37,17 +37,22 @@ func NewSearch(searchFunc func(query string)) *Search {
 	s.SetLabelWidth(8)
 	s.SetLabelColor(config.Configuration.Colors.TextPrimary)
 	s.SetDoneFunc(s.Done)
-	s.SetBorder(false)
+	s.SetBorder(true)
 	s.SetBorderColor(config.Configuration.Colors.Border)
 	s.SetFieldTextColor(config.Configuration.Colors.BookmarkForm.Text)
 	s.SetFieldBackgroundColor(config.Configuration.Colors.BookmarkForm.TextBackground)
-	s.SetPlaceholder("my-awesome-site")
+	s.SetPlaceholder("my bookmark")
 	s.SetPlaceholderTextColor(config.Configuration.Colors.TextPrimaryDim)
 	s.SetDoneFunc(s.Done)
 	return s
 }
 
 func (s *Search) Done(key tcell.Key) {
+	if key == tcell.KeyEscape {
+		s.SetText("")
+		return
+	}
+
 	if key != tcell.KeyEnter {
 		return
 	}
