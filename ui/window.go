@@ -201,16 +201,30 @@ func (w *Window) navBarClicked(label string) {
 
 }
 
-func (w *Window) closeMetadata(save bool, bookmark *models.Bookmark) {
+func (w *Window) closeMetadata(save bool, bookmark *models.Bookmark) bool {
 	if !w.metadataOpen {
-		return
+		return false
 	}
+	if save {
+		err := w.db.UpdateBookmark(bookmark)
+
+		if err != nil {
+			logrus.Errorf("Failed to update bookmark %d %s: %v", bookmark.Id, bookmark.Name, err)
+			// TODO: show modal for error?
+			return false
+		} else {
+			return true
+		}
+
+	}
+
 	if !save {
 		w.initDefaultLayout()
 	}
 	w.app.SetFocus(w.lastFocus)
 	w.lastFocus = nil
 	w.metadataOpen = false
+	return false
 }
 
 func (w *Window) initDefaultLayout() {

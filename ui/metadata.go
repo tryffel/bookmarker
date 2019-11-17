@@ -19,6 +19,8 @@ package ui
 import (
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
+	"strings"
+	"time"
 	"tryffel.net/pkg/bookmarker/config"
 	"tryffel.net/pkg/bookmarker/storage/models"
 )
@@ -46,15 +48,13 @@ type Metadata struct {
 	//is edit enabled
 	enableEdit bool
 
-	editBtn *tview.Button
-
 	//defaultFields that every bookmark has
 	defaultFields      map[string]*tview.InputField
 	defaultFieldsArray []*tview.InputField
 
 	customFields *map[string]*tview.InputField
 
-	doneFunc func(save bool, bookmark *models.Bookmark)
+	doneFunc func(save bool, bookmark *models.Bookmark) bool
 }
 
 func (m *Metadata) Draw(screen tcell.Screen) {
@@ -93,13 +93,12 @@ func (m *Metadata) GetFocusable() tview.Focusable {
 	return m.form.GetFocusable()
 }
 
-func NewMetadata(doneFunc func(save bool, bookmark *models.Bookmark)) *Metadata {
+func NewMetadata(doneFunc func(save bool, bookmark *models.Bookmark) bool) *Metadata {
 	m := &Metadata{
 		form:          tview.NewForm(),
 		bookmark:      nil,
 		tmpBookmark:   nil,
 		enableEdit:    false,
-		editBtn:       tview.NewButton("Edit"),
 		doneFunc:      doneFunc,
 		defaultFields: map[string]*tview.InputField{},
 	}
@@ -116,8 +115,6 @@ func NewMetadata(doneFunc func(save bool, bookmark *models.Bookmark)) *Metadata 
 	m.form.SetFieldBackgroundColor(colors.TextBackground)
 	m.form.SetFieldTextColor(colors.Text)
 
-	m.editBtn.SetSelectedFunc(m.toggleEdit)
-
 	m.defaultFieldsArray = make([]*tview.InputField, len(metadataDefaults))
 	for i := 0; i < len(metadataDefaults); i++ {
 		key := metadataDefaults[i]
@@ -126,16 +123,17 @@ func NewMetadata(doneFunc func(save bool, bookmark *models.Bookmark)) *Metadata 
 	}
 
 	width := 40
-	m.defaultFields[metadataName].SetFieldWidth(width)
-	m.defaultFields[metadataTags].SetFieldWidth(width)
-	m.defaultFields[metadataProject].SetFieldWidth(width)
-	m.defaultFields[metadataTags].SetFieldWidth(width)
-	m.defaultFields[metadataCreatedAt].SetFieldWidth(width)
-	m.defaultFields[metadataUpdatedAt].SetFieldWidth(width)
+	m.defaultFields[metadataName].SetFieldWidth(width).SetAcceptanceFunc(m.editEnabled)
+	m.defaultFields[metadataTags].SetFieldWidth(width).SetAcceptanceFunc(m.editEnabled)
+	m.defaultFields[metadataProject].SetFieldWidth(width).SetAcceptanceFunc(m.editEnabled)
+	m.defaultFields[metadataTags].SetFieldWidth(width).SetAcceptanceFunc(m.editEnabled)
+	m.defaultFields[metadataCreatedAt].SetFieldWidth(width).SetAcceptanceFunc(m.editEnabled)
+	m.defaultFields[metadataUpdatedAt].SetFieldWidth(width).SetAcceptanceFunc(m.editEnabled)
 	return m
 }
 
 func (m *Metadata) setData(bookmark *models.Bookmark) {
+	bookmark.FillDefaultMetadata()
 	m.bookmark = bookmark
 	m.form.Clear(true)
 	m.customFields = &map[string]*tview.InputField{}
@@ -157,11 +155,16 @@ func (m *Metadata) setFields(bookmark *models.Bookmark) {
 
 func (m *Metadata) toggleEdit() {
 	if m.enableEdit {
+		m.form.SetFieldBackgroundColor(config.Configuration.Colors.Metadata.TextBackground)
 		m.enableEdit = false
-		m.editBtn.SetLabel("Edit")
 	} else {
 		m.enableEdit = true
-		m.editBtn.SetLabel("Cancel")
+		m.form.SetFieldBackgroundColor(config.Configuration.Colors.Metadata.BackgroundEditable)
+		ind := m.form.GetButtonIndex("Edit")
+		m.form.RemoveButton(ind)
+
+		m.form.AddButton("Save", m.save)
+		m.form.AddButton("Cancel", m.cancel)
 	}
 }
 
@@ -189,4 +192,44 @@ func (m *Metadata) initCustomFields() {
 
 func (m *Metadata) editEnabled(text string, last rune) bool {
 	return m.enableEdit
+}
+
+func (m *Metadata) cancel() {
+	m.setData(m.bookmark)
+	m.tmpBookmark = nil
+	m.exitEdit()
+}
+
+func (m *Metadata) save() {
+	m.tmpBookmark = &models.Bookmark{
+		Id:           m.bookmark.Id,
+		Name:         m.defaultFields[metadataName].GetText(),
+		LowerName:    "",
+		Description:  m.defaultFields[metadataDescription].GetText(),
+		Content:      m.defaultFields[metadataLink].GetText(),
+		Project:      m.defaultFields[metadataProject].GetText(),
+		CreatedAt:    m.bookmark.CreatedAt,
+		UpdatedAt:    time.Now(),
+		Tags:         nil,
+		Metadata:     m.bookmark.Metadata,
+		MetadataKeys: m.bookmark.MetadataKeys,
+	}
+
+	m.tmpBookmark.LowerName = strings.ToLower(m.tmpBookmark.Name)
+	tags := m.defaultFields[metadataTags].GetText()
+	if tags != "" {
+		tags = strings.Replace(tags, " ", "", -1)
+		m.tmpBookmark.Tags = strings.Split(tags, ",")
+	}
+	ok := m.doneFunc(true, m.tmpBookmark)
+	if ok {
+		m.bookmark = m.tmpBookmark
+		m.setFields(m.bookmark)
+	}
+	m.exitEdit()
+}
+
+func (m *Metadata) exitEdit() {
+	m.enableEdit = false
+	m.form.SetFieldBackgroundColor(config.Configuration.Colors.Metadata.TextBackground)
 }

@@ -25,6 +25,13 @@ import (
 	"time"
 )
 
+var DefaulMetadata = []string{
+	"Author",
+	"Published At",
+	"Title",
+	"Ipfs",
+}
+
 type Bookmark struct {
 	Id          int
 	Name        string
@@ -67,4 +74,24 @@ func (b *Bookmark) TagsString(spaces bool) string {
 		separator += " "
 	}
 	return strings.Join(b.Tags, separator)
+}
+
+//FillDefaultMetadata fills certain defaults as empty fields into metadata.
+//Only apply default metadata if metadata is empty
+func (b *Bookmark) FillDefaultMetadata() {
+	if len(*b.MetadataKeys) > 0 || len(*b.Metadata) > 0 {
+		return
+	}
+
+	if b.Metadata == nil {
+		b.Metadata = &map[string]string{}
+	}
+	if b.MetadataKeys == nil {
+		b.MetadataKeys = &[]string{}
+	}
+
+	b.MetadataKeys = &DefaulMetadata
+	for _, v := range DefaulMetadata {
+		(*b.Metadata)[v] = ""
+	}
 }

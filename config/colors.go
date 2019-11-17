@@ -178,22 +178,24 @@ func defaultColorTags() ColorTags {
 }
 
 type ColorMetadata struct {
-	Background     tcell.Color
-	Label          tcell.Color
-	Text           tcell.Color
-	TextSelected   tcell.Color
-	TextBackground tcell.Color
-	TextEdited     tcell.Color
+	Background         tcell.Color
+	BackgroundEditable tcell.Color
+	Label              tcell.Color
+	Text               tcell.Color
+	TextSelected       tcell.Color
+	TextBackground     tcell.Color
+	TextEdited         tcell.Color
 }
 
 func defaultColorMetadata() ColorMetadata {
 	return ColorMetadata{
-		Background:     colorBackground,
-		Label:          tcell.Color252,
-		Text:           tcell.Color187,
-		TextSelected:   tcell.Color23,
-		TextBackground: tcell.Color235,
-		TextEdited:     tcell.Color187,
+		Background:         colorBackground,
+		BackgroundEditable: tcell.Color235,
+		Label:              tcell.Color252,
+		Text:               tcell.Color187,
+		TextSelected:       tcell.Color23,
+		TextBackground:     tcell.Color238,
+		TextEdited:         tcell.Color187,
 	}
 
 }

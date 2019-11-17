@@ -243,6 +243,20 @@ func (d *Database) SearchBookmarks(text string) ([]*models.Bookmark, error) {
 
 		bookmarks = append(bookmarks, &b)
 	}
-
 	return bookmarks, nil
+}
+
+func (d *Database) UpdateBookmark(b *models.Bookmark) error {
+	query := `
+UPDATE bookmarks SEt
+		name = ?,
+		lower_name = ?,
+		content = ?,
+		project = ?,
+		updated_at = ?
+WHERE id = ?;
+`
+
+	_, err := d.conn.Exec(query, b.Name, b.LowerName, b.Content, b.Project, b.UpdatedAt, b.Id)
+	return err
 }
