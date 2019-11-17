@@ -23,6 +23,7 @@ import (
 	"database/sql"
 	"github.com/sirupsen/logrus"
 	"strings"
+	"time"
 	"tryffel.net/pkg/bookmarker/storage/models"
 )
 
@@ -247,6 +248,7 @@ func (d *Database) SearchBookmarks(text string) ([]*models.Bookmark, error) {
 }
 
 func (d *Database) UpdateBookmark(b *models.Bookmark) error {
+	now := time.Now()
 	query := `
 UPDATE bookmarks SEt
 		name = ?,
@@ -258,5 +260,32 @@ WHERE id = ?;
 `
 
 	_, err := d.conn.Exec(query, b.Name, b.LowerName, b.Content, b.Project, b.UpdatedAt, b.Id)
+
+	if err != nil {
+		return err
+	}
+
+	query = `
+INSERT INTO metadata
+(bookmark, key, key_lower, value, value_lower)
+VALUES (?, ?, ?, ?, ?)
+ON CONFLICT(bookmark, key_lower) DO UPDATE SET
+value = ?, value_lower = ?
+WHERE bookmark = ?
+`
+
+	for key, value := range *b.Metadata {
+		keyLower := strings.ToLower(key)
+		valueLower := strings.ToLower(value)
+
+		_, err = d.conn.Exec(query, b.Id, key, keyLower, value, valueLower, value, valueLower, b.Id)
+		if err != nil {
+			logrus.Errorf("Failed to insert/update metadata: %v", err)
+		}
+	}
+
+	took := time.Since(now)
+	logrus.Debugf("Updating bookmark took %d ms", took.Milliseconds())
+
 	return err
 }

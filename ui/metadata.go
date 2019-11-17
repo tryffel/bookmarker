@@ -53,6 +53,7 @@ type Metadata struct {
 	defaultFieldsArray []*tview.InputField
 
 	customFields *map[string]*tview.InputField
+	customKeys   *[]string
 
 	doneFunc func(save bool, bookmark *models.Bookmark) bool
 }
@@ -137,6 +138,7 @@ func (m *Metadata) setData(bookmark *models.Bookmark) {
 	m.bookmark = bookmark
 	m.form.Clear(true)
 	m.customFields = &map[string]*tview.InputField{}
+	m.customKeys = bookmark.MetadataKeys
 	m.initDefaults()
 	m.setFields(m.bookmark)
 	m.initCustomFields()
@@ -185,7 +187,8 @@ func (m *Metadata) initCustomFields() {
 
 	for _, key := range *m.bookmark.MetadataKeys {
 
-		(*m.customFields)[key] = tview.NewInputField().SetLabel(key).SetText((*m.bookmark.Metadata)[key])
+		(*m.customFields)[key] = tview.NewInputField().SetLabel(key).SetText((*m.bookmark.Metadata)[key]).
+			SetAcceptanceFunc(m.editEnabled)
 		m.form.AddFormItem((*m.customFields)[key])
 	}
 }
@@ -198,6 +201,8 @@ func (m *Metadata) cancel() {
 	m.setData(m.bookmark)
 	m.tmpBookmark = nil
 	m.exitEdit()
+	m.form.ClearButtons()
+	m.initButtons()
 }
 
 func (m *Metadata) save() {
@@ -221,12 +226,21 @@ func (m *Metadata) save() {
 		tags = strings.Replace(tags, " ", "", -1)
 		m.tmpBookmark.Tags = strings.Split(tags, ",")
 	}
+
+	for _, key := range *m.customKeys {
+		value := (*m.customFields)[key].GetText()
+		(*m.tmpBookmark.Metadata)[key] = value
+	}
+
 	ok := m.doneFunc(true, m.tmpBookmark)
 	if ok {
 		m.bookmark = m.tmpBookmark
 		m.setFields(m.bookmark)
 	}
-	m.exitEdit()
+	m.enableEdit = false
+	m.form.SetFieldBackgroundColor(config.Configuration.Colors.Metadata.TextBackground)
+	m.form.ClearButtons()
+	m.initButtons()
 }
 
 func (m *Metadata) exitEdit() {
