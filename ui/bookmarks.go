@@ -89,13 +89,13 @@ func (b *BookmarkTable) SetData(data []*models.Bookmark) {
 
 	for i, v := range data {
 		b.table.SetCell(i+1, 0, tableCell(fmt.Sprint(i+1)))
-		b.table.SetCell(i+1, 1, tableCell(v.Name))
-		b.table.SetCell(i+1, 2, tableCell(v.Description))
-		b.table.SetCell(i+1, 3, tableCell(v.ContentDomain()))
-		tags := tableCell(v.TagsString(true))
+		b.table.SetCell(i+1, 1, tableCell(v.Name).SetMaxWidth(25).SetExpansion(1))
+		b.table.SetCell(i+1, 2, tableCell(v.Description).SetMaxWidth(35).SetExpansion(3))
+		b.table.SetCell(i+1, 3, tableCell(v.ContentDomain()).SetMaxWidth(20).SetExpansion(1))
+		tags := tableCell(v.TagsString(true)).SetMaxWidth(13).SetExpansion(1)
 		tags.SetTextColor(config.Configuration.Colors.Tags.Text)
 		b.table.SetCell(i+1, 4, tags)
-		b.table.SetCell(i+1, 5, tableCell(ShortTimeSince(v.CreatedAt)))
+		b.table.SetCell(i+1, 5, tableCell(ShortTimeSince(v.CreatedAt)).SetMaxWidth(15))
 	}
 
 	b.table.Select(1, 0)
