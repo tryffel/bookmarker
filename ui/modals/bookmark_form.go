@@ -54,6 +54,13 @@ func NewBookmarkForm(createFunc func(bookmark *models.Bookmark)) *BookmarkForm {
 	b.form.AddInputField("Description", "short description", 0, nil, nil)
 	b.form.AddInputField("Link", "https://..", 0, nil, nil)
 	b.form.AddInputField("Project", "e.g", 0, nil, nil)
+	b.form.AddInputField("Tags", "", 0, nil, nil)
+
+	custom := models.DefaulMetadata
+
+	for _, v := range custom {
+		b.form.AddInputField(v, "", 0, nil, nil)
+	}
 
 	b.form.AddButton("Create", b.create)
 	b.form.AddButton("Cancel", b.doneFunc)
@@ -108,6 +115,21 @@ func (n *BookmarkForm) create() {
 		UpdatedAt:   time.Now(),
 	}
 
+	bookmark.FillDefaultMetadata()
 	bookmark.LowerName = strings.ToLower(bookmark.Name)
+	tags := n.form.GetFormItemByLabel("Tags").(*tview.InputField).GetText()
+	if tags != "" {
+		tags = strings.Replace(tags, " ", "", -1)
+		bookmark.Tags = strings.Split(tags, ",")
+	}
+
+	for _, key := range models.DefaulMetadata {
+		item := n.form.GetFormItemByLabel(key)
+		if item != nil {
+			text := item.(*tview.InputField).GetText()
+			(*bookmark.Metadata)[key] = text
+		}
+	}
+
 	n.formFunc(bookmark)
 }

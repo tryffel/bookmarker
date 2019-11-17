@@ -158,11 +158,22 @@ func (d *Database) NewBookmark(b *models.Bookmark) error {
 	query := `
 INSERT INTO 
 bookmarks (name, lower_name, description, content, project, created_at, updated_at) 
-VALUES (?,?,?,?,?,?,?)`
+VALUES (?,?,?,?,?,?,?); SELECT last_insert_rowid() FROM bookmarks`
 
-	_, err := d.conn.Exec(query, b.Name, b.LowerName, b.Description, b.Content, b.Project, b.CreatedAt, b.UpdatedAt)
+	res, err := d.conn.Exec(query, b.Name, b.LowerName, b.Description, b.Content, b.Project, b.CreatedAt, b.UpdatedAt)
+
+	if err != nil {
+		return err
+	}
+
+	id, err := res.LastInsertId()
+	if err != nil {
+		logrus.Error(err)
+		return err
+	}
+	b.Id = int(id)
+	err = d.upsertMetadata(b)
 	return err
-
 }
 
 func (d *Database) GetBookmarkMetadata(bookmark *models.Bookmark) error {
@@ -265,7 +276,16 @@ WHERE id = ?;
 		return err
 	}
 
-	query = `
+	err = d.upsertMetadata(b)
+
+	took := time.Since(now)
+	logrus.Debugf("Updating bookmark took %d ms", took.Milliseconds())
+
+	return err
+}
+
+func (d *Database) upsertMetadata(b *models.Bookmark) error {
+	query := `
 INSERT INTO metadata
 (bookmark, key, key_lower, value, value_lower)
 VALUES (?, ?, ?, ?, ?)
@@ -278,14 +298,10 @@ WHERE bookmark = ?
 		keyLower := strings.ToLower(key)
 		valueLower := strings.ToLower(value)
 
-		_, err = d.conn.Exec(query, b.Id, key, keyLower, value, valueLower, value, valueLower, b.Id)
+		_, err := d.conn.Exec(query, b.Id, key, keyLower, value, valueLower, value, valueLower, b.Id)
 		if err != nil {
 			logrus.Errorf("Failed to insert/update metadata: %v", err)
 		}
 	}
-
-	took := time.Since(now)
-	logrus.Debugf("Updating bookmark took %d ms", took.Milliseconds())
-
-	return err
+	return nil
 }

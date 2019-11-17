@@ -79,6 +79,13 @@ func (b *Bookmark) TagsString(spaces bool) string {
 //FillDefaultMetadata fills certain defaults as empty fields into metadata.
 //Only apply default metadata if metadata is empty
 func (b *Bookmark) FillDefaultMetadata() {
+	if b.MetadataKeys == nil {
+		b.MetadataKeys = &[]string{}
+	}
+	if b.Metadata == nil {
+		b.Metadata = &map[string]string{}
+	}
+
 	if len(*b.MetadataKeys) > 0 || len(*b.Metadata) > 0 {
 		return
 	}
