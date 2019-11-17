@@ -14,35 +14,6 @@
  *   limitations under the License.
  */
 
-package config
+package external
 
-import "github.com/gdamore/tcell"
-
-type Shortcuts struct {
-	NavBar NavBar
-}
-
-func defaultShortcuts() Shortcuts {
-	return Shortcuts{
-		NavBar: defaultNavBar(),
-	}
-
-}
-
-type NavBar struct {
-	Help        tcell.Key
-	NewBookmark tcell.Key
-	OpenBrowser tcell.Key
-	Menu        tcell.Key
-	Quit        tcell.Key
-}
-
-func defaultNavBar() NavBar {
-	return NavBar{
-		Help:        tcell.KeyF1,
-		NewBookmark: tcell.KeyF2,
-		OpenBrowser: tcell.KeyF3,
-		Menu:        tcell.KeyF4,
-		Quit:        tcell.KeyF5,
-	}
-}
+var browserOpenUrl = "xdg-open"

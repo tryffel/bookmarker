@@ -22,6 +22,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"tryffel.net/go/twidgets"
 	"tryffel.net/pkg/bookmarker/config"
+	"tryffel.net/pkg/bookmarker/external"
 	"tryffel.net/pkg/bookmarker/storage"
 	"tryffel.net/pkg/bookmarker/storage/models"
 	"tryffel.net/pkg/bookmarker/ui/modals"
@@ -94,6 +95,14 @@ func (w *Window) inputCapture(event *tcell.EventKey) *tcell.EventKey {
 		}
 	case navbar.NewBookmark:
 		w.addModal(w.bookmarkForm, twidgets.ModalSizeMedium)
+	case navbar.OpenBrowser:
+		index, _ := w.bookmarks.table.GetSelection()
+		bookmark := w.bookmarks.items[index-1]
+
+		err := external.OpenUrlInBrowser(bookmark.Content)
+		if err != nil {
+			logrus.Errorf("Open link in browser: %v", err)
+		}
 	case tcell.KeyEscape:
 		if w.hasModal {
 			w.layout.RemoveModal(w.modal)
@@ -178,10 +187,10 @@ func NewWindow(colors config.Colors, shortcuts *config.Shortcuts, db *storage.Da
 
 	w.metadata = NewMetadata(w.closeMetadata)
 	w.navBar = twidgets.NewNavBar(col, w.navBarClicked)
-	navBarLabels = []string{"Help", "New Bookmark", "Menu", "Quit"}
+	navBarLabels = []string{"Help", "New Bookmark", "Open link", "Menu", "Quit"}
 
 	sc := shortcuts.NavBar
-	navBarShortucts = []tcell.Key{sc.Help, sc.NewBookmark, sc.Menu, sc.Quit}
+	navBarShortucts = []tcell.Key{sc.Help, sc.NewBookmark, sc.OpenBrowser, sc.Menu, sc.Quit}
 
 	for i, v := range navBarLabels {
 		btn := tview.NewButton(v)
