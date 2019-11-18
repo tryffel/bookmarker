@@ -347,11 +347,11 @@ func (w *Window) FilterByProject(project *models.Project) {
 		}
 	} else {
 		name := ""
-		strict := false
+		strict := true
 		name = project.FullName()
 		logrus.Debug("Filtering with projects: ", name)
 		if project.Parent != nil {
-			strict = true
+			strict = false
 		}
 		bookmarks, err := w.db.GetProjectBookmarks(name, strict)
 		if err != nil {
