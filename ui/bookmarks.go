@@ -82,20 +82,22 @@ func (b *BookmarkTable) SetData(data []*models.Bookmark) {
 	b.table.SetCell(0, 0, tableHeaderCell("#"))
 	b.table.SetCell(0, 1, tableHeaderCell("Name"))
 	b.table.SetCell(0, 2, tableHeaderCell("Description"))
-	b.table.SetCell(0, 3, tableHeaderCell("Link"))
-	b.table.SetCell(0, 4, tableHeaderCell("Tags"))
-	b.table.SetCell(0, 5, tableHeaderCell("Added at"))
+	b.table.SetCell(0, 3, tableHeaderCell("Project"))
+	b.table.SetCell(0, 4, tableHeaderCell("Link"))
+	b.table.SetCell(0, 5, tableHeaderCell("Tags"))
+	b.table.SetCell(0, 6, tableHeaderCell("Added at"))
 	b.table.SetOffset(1, 0)
 
 	for i, v := range data {
 		b.table.SetCell(i+1, 0, tableCell(fmt.Sprint(i+1)))
 		b.table.SetCell(i+1, 1, tableCell(v.Name).SetMaxWidth(25).SetExpansion(1))
 		b.table.SetCell(i+1, 2, tableCell(v.Description).SetMaxWidth(35).SetExpansion(3))
-		b.table.SetCell(i+1, 3, tableCell(v.ContentDomain()).SetMaxWidth(20).SetExpansion(1))
+		b.table.SetCell(i+1, 3, tableCell(v.Project).SetMaxWidth(20).SetExpansion(1))
+		b.table.SetCell(i+1, 4, tableCell(v.ContentDomain()).SetMaxWidth(20).SetExpansion(1))
 		tags := tableCell(v.TagsString(true)).SetMaxWidth(13).SetExpansion(1)
 		tags.SetTextColor(config.Configuration.Colors.Tags.Text)
-		b.table.SetCell(i+1, 4, tags)
-		b.table.SetCell(i+1, 5, tableCell(ShortTimeSince(v.CreatedAt)).SetMaxWidth(15))
+		b.table.SetCell(i+1, 5, tags)
+		b.table.SetCell(i+1, 6, tableCell(ShortTimeSince(v.CreatedAt)).SetMaxWidth(15))
 	}
 
 	b.table.Select(1, 0)
