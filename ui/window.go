@@ -136,6 +136,8 @@ func (w *Window) inputCapture(event *tcell.EventKey) *tcell.EventKey {
 	case tcell.KeyTAB:
 		if !w.metadataOpen && !w.hasModal {
 			w.nextWidget()
+		} else {
+			return event
 		}
 	default:
 		return event
