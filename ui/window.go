@@ -31,6 +31,8 @@ import (
 var navBarLabels = make([]string, 0)
 var navBarShortucts = make([]tcell.Key, 0)
 
+// Navigating over widgets with tab in this order
+
 type Window struct {
 	app *tview.Application
 	db  *storage.Database
@@ -55,7 +57,9 @@ type Window struct {
 	modal     twidgets.Modal
 	lastFocus tview.Primitive
 
-	createFunc func(bookmark *models.Bookmark)
+	tabWidgetCount int
+	tabWidgets     []tview.Primitive
+	createFunc     func(bookmark *models.Bookmark)
 
 	metadataOpen bool
 }
@@ -118,6 +122,7 @@ func (w *Window) inputCapture(event *tcell.EventKey) *tcell.EventKey {
 			w.searchOpen = false
 		}
 	case tcell.KeyCtrlSpace:
+		//case tcell.KeyEnter:
 		if !w.metadataOpen || !w.hasModal {
 			w.openMetadata()
 		}
@@ -127,11 +132,26 @@ func (w *Window) inputCapture(event *tcell.EventKey) *tcell.EventKey {
 		w.lastFocus = w.app.GetFocus()
 		w.app.SetFocus(w.search)
 		w.searchOpen = true
+
+	case tcell.KeyTAB:
+		if !w.metadataOpen && !w.hasModal {
+			w.nextWidget()
+		}
 	default:
 		return event
 	}
 	return nil
 
+}
+
+func (w *Window) nextWidget() {
+	next := w.tabWidgetCount + 1
+	if next >= len(w.tabWidgets) {
+		next = 0
+	}
+
+	w.app.SetFocus(w.tabWidgets[next])
+	w.tabWidgetCount = next
 }
 
 func (w *Window) addModal(modal twidgets.Modal, size twidgets.ModalSize) {
@@ -177,6 +197,7 @@ func NewWindow(colors config.Colors, shortcuts *config.Shortcuts, db *storage.Da
 	w.bookmarkForm = modals.NewBookmarkForm(w.createBookmark)
 	w.grid.SetBackgroundColor(colors.Background)
 	w.search = NewSearch(w.Search)
+	w.project.SetSelectFunc(w.FilterByProject)
 
 	w.gridSize = 6
 	w.grid.SetRows(1, -1)
@@ -199,6 +220,10 @@ func NewWindow(colors config.Colors, shortcuts *config.Shortcuts, db *storage.Da
 
 	w.grid.AddItem(w.navBar, 0, 0, 1, 1, 1, 10, false)
 	w.grid.AddItem(w.layout, 1, 0, 1, 1, 4, 4, true)
+
+	w.tabWidgets = append(w.tabWidgets, w.bookmarks)
+	w.tabWidgets = append(w.tabWidgets, w.project)
+	w.tabWidgets = append(w.tabWidgets, w.tags)
 
 	w.initDefaultLayout()
 	w.app.SetFocus(w.bookmarks)
@@ -306,4 +331,32 @@ func (w *Window) Search(text string) {
 	}
 
 	w.bookmarks.SetData(bookmarks)
+}
+
+func (w *Window) FilterByProject(project *models.Project) {
+
+	if project == nil {
+
+		bookmarks, err := w.db.GetAllBookmarks()
+		if err != nil {
+			logrus.Error("Get all bookmarks: %v", err)
+		} else {
+			w.bookmarks.SetData(bookmarks)
+		}
+	} else {
+		name := ""
+		strict := false
+		name = project.FullName()
+		logrus.Debug("Filtering with projects: ", name)
+		if project.Parent != nil {
+			strict = true
+		}
+		bookmarks, err := w.db.GetProjectBookmarks(name, strict)
+		if err != nil {
+
+			logrus.Error("Get bookmarks by project: %v", err)
+		} else {
+			w.bookmarks.SetData(bookmarks)
+		}
+	}
 }

@@ -160,7 +160,8 @@ INSERT INTO
 bookmarks (name, lower_name, description, content, project, created_at, updated_at) 
 VALUES (?,?,?,?,?,?,?); SELECT last_insert_rowid() FROM bookmarks`
 
-	res, err := d.conn.Exec(query, b.Name, b.LowerName, b.Description, b.Content, b.Project, b.CreatedAt, b.UpdatedAt)
+	res, err := d.conn.Exec(query, b.Name, b.LowerName, b.Description, b.Content, strings.ToLower(b.Project),
+		b.CreatedAt, b.UpdatedAt)
 
 	if err != nil {
 		return err
@@ -270,7 +271,7 @@ UPDATE bookmarks SEt
 WHERE id = ?;
 `
 
-	_, err := d.conn.Exec(query, b.Name, b.LowerName, b.Content, b.Project, b.UpdatedAt, b.Id)
+	_, err := d.conn.Exec(query, b.Name, b.LowerName, b.Content, strings.ToLower(b.Project), b.UpdatedAt, b.Id)
 
 	if err != nil {
 		return err
@@ -304,4 +305,56 @@ WHERE bookmark = ?
 		}
 	}
 	return nil
+}
+
+//GetProjectBookmarks gets all bookmarks with given project.
+// If strict = true, project must match exatly, else all children are returned also
+func (d *Database) GetProjectBookmarks(project string, strict bool) ([]*models.Bookmark, error) {
+
+	query := `
+SELECT
+    b.id as id,
+    b.name AS name, 
+    b.description AS description, 
+    b.content as content, 
+    b.project AS project, 
+    b.created_at AS created_at,
+    b.updated_at AS updated_at,
+    GROUP_CONCAT(t.name) AS tags
+FROM bookmarks b
+LEFT JOIN bookmark_tags bt ON b.id = bt.bookmark
+LEFT JOIN tags t ON bt.tag = t.id 
+WHERE b.project `
+
+	if strict {
+		query += "LIKE ? "
+		project = "%" + project + "%"
+	} else {
+		query += "= ? "
+	}
+	query += `
+GROUP BY b.id
+ORDER BY b.name ASC
+LIMIT 100;
+`
+	rows, err := d.conn.Query(query, project)
+	if err != nil {
+		return nil, err
+	}
+
+	bookmarks := make([]*models.Bookmark, 0)
+	for rows.Next() {
+		var b models.Bookmark
+		var tags sql.NullString
+		err = rows.Scan(&b.Id, &b.Name, &b.Description, &b.Content, &b.Project, &b.CreatedAt, &b.UpdatedAt, &tags)
+		if err != nil {
+			logrus.Errorf("Scan rows failed: %v", err)
+		}
+		if tags.String != "" {
+			t := strings.Split(tags.String, ",")
+			b.Tags = t
+		}
+		bookmarks = append(bookmarks, &b)
+	}
+	return bookmarks, nil
 }

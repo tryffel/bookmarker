@@ -25,84 +25,118 @@ import (
 )
 
 type Projects struct {
-	tree    *tview.TreeView
+	table   *tview.Table
 	project []*models.Project
+
+	rows []*models.Project
+
+	selected   bool
+	selectFunc func(bookmark *models.Project)
 }
 
 func NewProjects() *Projects {
-	p := &Projects{tree: tview.NewTreeView()}
+	p := &Projects{table: tview.NewTable()}
+	p.rows = []*models.Project{}
 	colors := config.Configuration.Colors.Projects
-	p.tree.SetTitle("Projects")
-	p.tree.SetTitleColor(colors.Text)
-	p.tree.SetBorder(true)
-	p.tree.SetBorderColor(config.Configuration.Colors.Border)
-	p.tree.SetBackgroundColor(colors.Background)
-	p.tree.SetBorderColor(config.Configuration.Colors.Border)
+	p.table.SetTitle("Projects")
+	p.table.SetTitleColor(colors.Text)
+	p.table.SetBorder(true)
+	p.table.SetBorderColor(config.Configuration.Colors.Border)
+	p.table.SetBackgroundColor(colors.Background)
+	p.table.SetBorderColor(config.Configuration.Colors.Border)
+	p.table.SetSelectedFunc(p.selectProject)
+	p.table.SetSelectable(true, false)
+	p.table.SetSelectedStyle(config.Configuration.Colors.Projects.Text,
+		config.Configuration.Colors.Projects.Background, 0)
+
 	return p
 }
 
+func (p *Projects) SetSelectFunc(selectFunc func(project *models.Project)) {
+	p.selectFunc = selectFunc
+}
+
 func (p *Projects) Draw(screen tcell.Screen) {
-	p.tree.Draw(screen)
+	p.table.Draw(screen)
 }
 
 func (p *Projects) GetRect() (int, int, int, int) {
-	return p.tree.GetRect()
+	return p.table.GetRect()
 }
 
 func (p *Projects) SetRect(x, y, width, height int) {
-	p.tree.SetRect(x, y, width, height)
+	p.table.SetRect(x, y, width, height)
 }
 
 func (p *Projects) InputHandler() func(event *tcell.EventKey, setFocus func(p tview.Primitive)) {
-	return p.tree.InputHandler()
+	return p.table.InputHandler()
 }
 
 func (p *Projects) Focus(delegate func(p tview.Primitive)) {
-	p.tree.Focus(delegate)
-	p.tree.SetBorderColor(config.Configuration.Colors.BorderFocus)
+	p.table.Focus(delegate)
+	p.table.SetBorderColor(config.Configuration.Colors.BorderFocus)
+	p.table.SetSelectedStyle(config.Configuration.Colors.Bookmarks.TextSelected,
+		config.Configuration.Colors.Bookmarks.BackgroundSelected, 0)
 }
 
 func (p *Projects) Blur() {
-	p.tree.Blur()
-	p.tree.SetBorderColor(config.Configuration.Colors.Border)
+	p.table.Blur()
+	p.table.SetBorderColor(config.Configuration.Colors.Border)
+	if !p.selected {
+		p.table.SetSelectedStyle(config.Configuration.Colors.Projects.Text,
+			config.Configuration.Colors.Projects.Background, 0)
+	}
 }
 
 func (p *Projects) GetFocusable() tview.Focusable {
-	return p.tree.GetFocusable()
+	return p.table.GetFocusable()
 }
 
 func (p *Projects) SetData(projects []*models.Project) {
 	p.project = projects
+	p.rows = []*models.Project{}
+	p.table.Clear()
+	p.table.SetCell(0, 0, tableHeaderCell("Name"))
+	p.table.SetCell(0, 1, tableHeaderCell("Count"))
+	p.table.SetCell(1, 0, tableCell("-"))
+	p.table.SetCell(1, 1, tableCell(""))
+	p.table.SetOffset(1, 0)
+	p.table.SetFixed(1, 0)
 
-	top := newTreeNode("Projects")
+	totalCount := 0
 
-	// Root nodes
-	for _, root := range projects {
-		rootItem := newTreeNode(fmt.Sprintf("%s %d", root.Name, root.TotalCount()))
-		addTree(root, rootItem)
-		top.AddChild(rootItem)
+	indent := ""
+	index := 2
+
+	for _, project := range projects {
+		totalCount += project.TotalCount()
+		index = p.addProject(project, index, indent)
+		index += 1
 	}
-
-	p.tree.SetRoot(top)
+	p.table.SetCell(1, 1, tableCell(fmt.Sprint(totalCount)))
+	p.table.Select(1, 0)
 }
 
-// Add tree adds recursive tree to node
-func addTree(project *models.Project, node *tview.TreeNode) {
-	node.SetText(fmt.Sprintf("%s %d", project.Name, project.TotalCount()))
-	node.SetColor(config.Configuration.Colors.Projects.Text)
-	if project.Children == nil {
-		return
-	}
+func (p *Projects) addProject(project *models.Project, index int, indent string) int {
+	p.table.SetCell(index, 0, tableCell(indent+project.Name))
+	p.table.SetCell(index, 1, tableCell(fmt.Sprint(project.TotalCount())))
+	p.rows = append(p.rows, project)
 
-	for _, v := range project.Children {
-		child := tview.NewTreeNode(v.Name)
-		addTree(v, child)
-		node.AddChild(child)
+	for _, child := range project.Children {
+		index = p.addProject(child, index+1, indent+"  ")
 	}
+	return index
 }
 
-func newTreeNode(text string) *tview.TreeNode {
-	node := tview.NewTreeNode(text)
-	node.SetColor(config.Configuration.Colors.Bookmarks.Text)
-	return node
+func (p *Projects) selectProject(row, col int) {
+	p.selected = true
+
+	if p.selectFunc != nil {
+		if row == 1 {
+			p.selectFunc(nil)
+		} else {
+			project := p.rows[row-2]
+			p.selectFunc(project)
+		}
+	}
 }
