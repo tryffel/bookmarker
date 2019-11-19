@@ -338,9 +338,7 @@ func (w *Window) Search(text string) {
 }
 
 func (w *Window) FilterByProject(project *models.Project) {
-
 	if project == nil {
-
 		bookmarks, err := w.db.GetAllBookmarks()
 		if err != nil {
 			logrus.Error("Get all bookmarks: %v", err)
@@ -352,7 +350,7 @@ func (w *Window) FilterByProject(project *models.Project) {
 		strict := true
 		name = project.FullName()
 		logrus.Debug("Filtering with projects: ", name)
-		if project.Parent != nil {
+		if project.Parent != nil || len(project.Children) > 0 {
 			strict = false
 		}
 		bookmarks, err := w.db.GetProjectBookmarks(name, strict)

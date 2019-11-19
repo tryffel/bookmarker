@@ -367,7 +367,7 @@ LEFT JOIN bookmark_tags bt ON b.id = bt.bookmark
 LEFT JOIN tags t ON bt.tag = t.id 
 WHERE b.project `
 
-	if strict {
+	if !strict {
 		query += "LIKE ? "
 		project = "%" + project + "%"
 	} else {
