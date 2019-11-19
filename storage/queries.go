@@ -226,29 +226,45 @@ func (d *Database) SearchBookmarks(text string) ([]*models.Bookmark, error) {
 	text = "%" + text + "%"
 
 	query := `
-	SELECT
+-- metadata
+SELECT
+    b.id AS id,
+    b.name AS name,
+    b.description AS description,
+    b.content AS content,
+    b.project AS project,
+    b.created_at AS created_at,
+    b.updated_at AS updated_at,
+       -- skip tags for now
+    '' as tags
+FROM bookmarks b
+         LEFT outer JOIN metadata m on b.id = m.bookmark
+WHERE m.value_lower like ?
+UNION
+-- bookmarks with tags
+SELECT
 	b.id as id,
-		b.name AS name,
-		b.description AS description,
-		b.content as content,
-		b.project AS project,
-		b.created_at AS created_at,
-		b.updated_at AS updated_at,
-		GROUP_CONCAT(t.name) AS tags
-	FROM bookmarks b
-		LEFT JOIN bookmark_tags bt ON b.id = bt.bookmark
-		LEFT JOIN tags t ON bt.tag = t.id
-	WHERE b.lower_name LIKE ?
-		OR b.description LIKE ?
-		OR b.content LIKE ?
-		OR b.project LIKE ?
-		OR t.name LIKE ?
-	GROUP BY b.id
-	ORDER BY b.name ASC
-	LIMIT 100;
+	b.name AS name,
+	b.description AS description,
+	b.content as content,
+	b.project AS project,
+	b.created_at AS created_at,
+	b.updated_at AS updated_at,
+	GROUP_CONCAT(t.name) AS tags
+FROM bookmarks b
+	LEFT JOIN bookmark_tags bt ON b.id = bt.bookmark
+	LEFT JOIN tags t ON bt.tag = t.id
+WHERE b.lower_name LIKE ?
+	OR b.description LIKE ?
+	OR b.content LIKE ?
+	OR b.project LIKE ?
+	OR t.name LIKE ?
+GROUP BY b.id
+ORDER BY b.name ASC
+LIMIT 300;
 `
 
-	rows, err := d.conn.Query(query, text, text, text, text, text)
+	rows, err := d.conn.Query(query, text, text, text, text, text, text, text)
 	if err != nil {
 		return nil, err
 	}
