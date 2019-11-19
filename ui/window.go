@@ -286,9 +286,11 @@ func (w *Window) openMetadata() {
 	w.layout.Grid().RemoveItem(w.bookmarks)
 	w.layout.Grid().RemoveItem(w.project)
 	w.layout.Grid().RemoveItem(w.tags)
+	w.layout.Grid().RemoveItem(w.search)
 
 	w.layout.Grid().AddItem(w.bookmarks, 0, 0, 9, 7, 10, 10, false)
-	w.layout.Grid().AddItem(w.metadata, 0, 7, 9, 3, 10, 10, true)
+	w.layout.Grid().AddItem(w.search, 9, 0, 1, 7, 1, 10, false)
+	w.layout.Grid().AddItem(w.metadata, 0, 7, 10, 3, 10, 10, true)
 
 	index, _ := w.bookmarks.table.GetSelection()
 	bookmark := w.bookmarks.items[index-1]
