@@ -241,13 +241,14 @@ func (d *Database) SearchBookmarks(text string) ([]*models.Bookmark, error) {
 	WHERE b.lower_name LIKE ?
 		OR b.description LIKE ?
 		OR b.content LIKE ?
-		OR b.project like ?
+		OR b.project LIKE ?
+		OR t.name LIKE ?
 	GROUP BY b.id
 	ORDER BY b.name ASC
 	LIMIT 100;
 `
 
-	rows, err := d.conn.Query(query, text, text, text, text)
+	rows, err := d.conn.Query(query, text, text, text, text, text)
 	if err != nil {
 		return nil, err
 	}
