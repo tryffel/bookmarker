@@ -23,7 +23,6 @@ import (
 	"database/sql"
 	"github.com/sirupsen/logrus"
 	"strings"
-	"time"
 	"tryffel.net/pkg/bookmarker/storage/models"
 )
 
@@ -174,6 +173,20 @@ VALUES (?,?,?,?,?,?,?); SELECT last_insert_rowid() FROM bookmarks`
 	}
 	b.Id = int(id)
 	err = d.upsertMetadata(b)
+	if err != nil {
+		logrus.Error("Insert / update bookmark metadata: %v", err)
+	}
+	if len(b.Tags) > 0 {
+		err = d.InsertTags(b.Tags)
+		if err != nil {
+			logrus.Errorf("Insert tags: %v", err)
+		} else {
+			err = d.UpdateBookmarkTags(b, b.Tags)
+			if err != nil {
+				logrus.Errorf("Update bookmark tags: %v", err)
+			}
+		}
+	}
 	return err
 }
 
@@ -260,7 +273,6 @@ func (d *Database) SearchBookmarks(text string) ([]*models.Bookmark, error) {
 }
 
 func (d *Database) UpdateBookmark(b *models.Bookmark) error {
-	now := time.Now()
 	query := `
 UPDATE bookmarks SEt
 		name = ?,
@@ -270,7 +282,6 @@ UPDATE bookmarks SEt
 		updated_at = ?
 WHERE id = ?;
 `
-
 	_, err := d.conn.Exec(query, b.Name, b.LowerName, b.Content, strings.ToLower(b.Project), b.UpdatedAt, b.Id)
 
 	if err != nil {
@@ -278,13 +289,26 @@ WHERE id = ?;
 	}
 
 	err = d.upsertMetadata(b)
+	if err != nil {
+		return err
+	}
 
-	took := time.Since(now)
-	logrus.Debugf("Updating bookmark took %d ms", took.Milliseconds())
+	if len(b.Tags) > 0 {
+		err = d.InsertTags(b.Tags)
+		if err != nil {
+			logrus.Errorf("Insert tags: %v", err)
+		} else {
+			err = d.UpdateBookmarkTags(b, b.Tags)
+			if err != nil {
+				logrus.Errorf("Update bookmark tags: %v", err)
+			}
+		}
+	}
 
 	return err
 }
 
+//UpsertMetadata upserts (insert / update) metadata
 func (d *Database) upsertMetadata(b *models.Bookmark) error {
 	query := `
 INSERT INTO metadata
@@ -357,4 +381,45 @@ LIMIT 100;
 		bookmarks = append(bookmarks, &b)
 	}
 	return bookmarks, nil
+}
+
+func (d *Database) InsertTags(tags []string) error {
+	query := "INSERT INTO tags (name) VALUES "
+
+	args := make([]interface{}, len(tags))
+	for i, v := range tags {
+		if i > 0 {
+			query += ","
+		}
+		query += "(?) "
+		args[i] = v
+	}
+	query += " ON CONFLICT (name) DO NOTHING;"
+	_, err := d.conn.Exec(query, args...)
+	return err
+}
+
+//AddTagsToBookmark adds tags to bookmark. Tags must exist before calling this function
+func (d *Database) UpdateBookmarkTags(bookmark *models.Bookmark, tags []string) error {
+	query := `DELETE FROM main.bookmark_tags WHERE bookmark_tags.bookmark = ?; INSERT INTO bookmark_tags (bookmark, tag)
+	SELECT
+		bookmarks.id AS bookmark,
+		tag.id AS tag
+		FROM bookmarks
+		LEFT JOIN (SELECT id FROM tags WHERE name IN (`
+
+	args := make([]interface{}, len(tags)+2)
+	args[0] = bookmark.Id
+	for i, v := range tags {
+		if i > 0 {
+			query += ","
+		}
+		query += "?"
+		args[i+1] = v
+	}
+
+	args[len(args)-1] = bookmark.Id
+	query += ")) AS tag WHERE bookmark = ?;"
+	_, err := d.conn.Exec(query, args...)
+	return err
 }
