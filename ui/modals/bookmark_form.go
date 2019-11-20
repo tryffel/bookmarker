@@ -49,21 +49,7 @@ func NewBookmarkForm(createFunc func(bookmark *models.Bookmark)) *BookmarkForm {
 	b.form.SetLabelColor(colors.Label)
 	b.form.SetFieldBackgroundColor(colors.TextBackground)
 	b.form.SetFieldTextColor(colors.Text)
-
-	b.form.AddInputField("Name", "bookmark", 0, nil, nil)
-	b.form.AddInputField("Description", "short description", 0, nil, nil)
-	b.form.AddInputField("Link", "https://..", 0, nil, nil)
-	b.form.AddInputField("Project", "e.g", 0, nil, nil)
-	b.form.AddInputField("Tags", "", 0, nil, nil)
-
-	custom := models.DefaulMetadata
-
-	for _, v := range custom {
-		b.form.AddInputField(v, "", 0, nil, nil)
-	}
-
-	b.form.AddButton("Create", b.create)
-	b.form.AddButton("Cancel", b.doneFunc)
+	b.initForm()
 
 	return b
 }
@@ -132,4 +118,25 @@ func (n *BookmarkForm) create() {
 	}
 
 	n.formFunc(bookmark)
+}
+
+func (n *BookmarkForm) Clear() {
+	n.form.Clear(true)
+	n.initForm()
+}
+
+func (n *BookmarkForm) initForm() {
+	n.form.AddInputField("Name", "bookmark", 0, nil, nil)
+	n.form.AddInputField("Description", "short description", 0, nil, nil)
+	n.form.AddInputField("Link", "https://..", 0, nil, nil)
+	n.form.AddInputField("Project", "e.g", 0, nil, nil)
+	n.form.AddInputField("Tags", "", 0, nil, nil)
+
+	custom := models.DefaulMetadata
+	for _, v := range custom {
+		n.form.AddInputField(v, "", 0, nil, nil)
+	}
+
+	n.form.AddButton("Create", n.create)
+	n.form.AddButton("Cancel", n.doneFunc)
 }
