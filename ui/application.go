@@ -71,7 +71,7 @@ func (a *Application) inputCapture(eventKey *tcell.EventKey) *tcell.EventKey {
 	case navbar.Help:
 		if !a.hasModal {
 			a.addModal(a.window.help, 10, 40, true)
-			a.window.help.Update()
+			//a.window.help.Update()
 		}
 	case navbar.NewBookmark:
 		a.addModal(a.window.bookmarkForm, 10, 40, false)

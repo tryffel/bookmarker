@@ -21,8 +21,8 @@ import (
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
 	"runtime"
-	"time"
 	"tryffel.net/pkg/bookmarker/config"
+	"tryffel.net/pkg/bookmarker/storage"
 )
 
 const (
@@ -80,25 +80,46 @@ func NewHelp() *Help {
 	h.TextView.SetBorderColor(colors.BorderFocus)
 	h.TextView.SetBackgroundColor(colors.Background)
 	h.TextView.SetTextColor(colors.TextPrimary)
+	h.TextView.SetBorderPadding(1, 1, 1, 1)
 
-	text := fmt.Sprintf("%s\n%s\n%s", logo, config.Version, helpText)
+	text := fmt.Sprintf("%s\nv %s\n%s", logo, config.Version, helpText)
 	h.TextView.SetText(text)
 
 	return h
 }
 
-func (h *Help) Update() {
-	text := fmt.Sprintf("%s\n%s\n%s", logo, config.Version, helpText)
-	h.TextView.SetText(text)
+func (h *Help) Update(stats *storage.Statistics) {
+	text := fmt.Sprintf("%s\nv %s\n%s", logo, config.Version, helpText)
+	//h.TextView.SetText(text)
 
-	stats := runtime.MemStats{}
-	runtime.ReadMemStats(&stats)
+	runStats := runtime.MemStats{}
+	runtime.ReadMemStats(&runStats)
+
+	//stat := fmt.Sprintf("Last GC: %s\nNext GC: %s",
+	//	time.Unix(0, int64(stats.LastGC)).Format(timeFormat), time.Unix(0, int64(stats.NextGC)).Format(timeFormat))
+
+	//text += "\n" + stat
 
 	timeFormat := "2006-01-02 15:04:05"
-	stat := fmt.Sprintf("Last GC: %s\nNext GC: %s",
-		time.Unix(0, int64(stats.LastGC)).Format(timeFormat), time.Unix(0, int64(stats.NextGC)).Format(timeFormat))
+	text += fmt.Sprintf("Statistics:\nBookmarks: %d\nTags: %d\nProjects: %d\nLast Bookmark: %s\n",
+		stats.Bookmarks, stats.Tags, stats.Projects, stats.LastBookmark.Format(timeFormat))
 
-	text += "\n" + stat
-
+	text += fmt.Sprintf("Memory: %s\n", formatBytes(runStats.Alloc))
 	h.SetText(text)
+}
+
+func formatBytes(bytes uint64) string {
+	if bytes < 1024 {
+		return fmt.Sprint(bytes)
+	}
+	if bytes < 1024*1024 {
+		return fmt.Sprintf("%d KiB", bytes/1024)
+	}
+	if bytes < 1024*1024*1024 {
+		return fmt.Sprintf("%d MiB", bytes/1024/1024)
+	}
+	if bytes < 1024*1024*1024 {
+		return fmt.Sprintf("%d GiB", bytes/1024/1024/1024)
+	}
+	return ""
 }

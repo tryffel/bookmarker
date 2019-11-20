@@ -619,3 +619,42 @@ WHERE bookmarks.id = ?`
 	_, err := d.conn.Exec(query, bookmark.Id)
 	return err
 }
+
+func (d *Database) GetStatistics() (*Statistics, error) {
+	s := &Statistics{}
+
+	query := `
+	SELECT
+		COUNT(DISTINCT(b.id)) AS bookmarks,
+		COUNT(DISTINCT(t.id)) AS tags,
+		COUNT(DISTINCT(b.project)) AS projects
+	FROM bookmarks b,
+		tags t`
+
+	rows, err := d.conn.Query(query)
+	if err != nil {
+		rows.Close()
+		return s, err
+	}
+
+	rows.Next()
+	err = rows.Scan(&s.Bookmarks, &s.Tags, &s.Projects)
+	if err != nil {
+		return s, err
+	}
+
+	query = `
+SELECT b.created_at
+FROM bookmarks b
+ORDER BY b.created_at DESC
+LIMIT 1
+`
+	rows, err = d.conn.Query(query)
+	if err != nil {
+		rows.Close()
+		return s, err
+	}
+	rows.Next()
+	err = rows.Scan(&s.LastBookmark)
+	return s, err
+}

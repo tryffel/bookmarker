@@ -98,8 +98,14 @@ func (w *Window) inputCapture(event *tcell.EventKey) *tcell.EventKey {
 	switch key {
 	case navbar.Help:
 		if !w.hasModal {
+
+			stats, err := w.db.GetStatistics()
+			if err != nil {
+				logrus.Errorf("Get statistics: &v", err)
+			}
+
 			w.addModal(w.help, twidgets.ModalSizeMedium)
-			w.help.Update()
+			w.help.Update(stats)
 		}
 	case navbar.NewBookmark:
 		w.addModal(w.bookmarkForm, twidgets.ModalSizeMedium)
