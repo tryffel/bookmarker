@@ -21,8 +21,11 @@ package storage
 
 import (
 	"database/sql"
+	"fmt"
+	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
 	"strings"
+	"time"
 	"tryffel.net/pkg/bookmarker/storage/models"
 )
 
@@ -177,17 +180,159 @@ VALUES (?,?,?,?,?,?,?); SELECT last_insert_rowid() FROM bookmarks`
 		logrus.Error("Insert / update bookmark metadata: %v", err)
 	}
 	if len(b.Tags) > 0 {
-		err = d.InsertTags(b.Tags)
+		err = d.InsertTags(b.Tags, nil)
 		if err != nil {
 			logrus.Errorf("Insert tags: %v", err)
 		} else {
-			err = d.UpdateBookmarkTags(b, b.Tags)
+			err = d.UpdateBookmarkTags(b, b.Tags, nil)
 			if err != nil {
 				logrus.Errorf("Update bookmark tags: %v", err)
 			}
 		}
 	}
 	return err
+}
+
+//NewBookmarks creates batch of new bookmarks. Bookmark ids are not collected and need to be queried separately
+// AddTags allows defining any custom tags that are assigned to all bookmarks
+func (d *Database) NewBookmarks(bookmarks []*models.Bookmark, AddTags []string) error {
+	//Max variables for sqlite is 999, batch of 100 = 700 vars
+	batchSize := 100
+	total := len(bookmarks)
+	imported := 0
+
+	// Get last id
+	id := 0
+	rows, err := d.conn.Query("SELECT max(id) FROM main.bookmarks;")
+	if err != nil {
+		return fmt.Errorf("failed to query last id: %v", err)
+	}
+
+	id += 1
+
+	rows.Next()
+	err = rows.Scan(&id)
+	if err != nil {
+		return fmt.Errorf("failed to scan last id: %v", err)
+
+	}
+	err = rows.Close()
+
+	tx, err := d.conn.Beginx()
+	if err != nil {
+		return fmt.Errorf("start transaction: %v", err)
+	}
+
+	tagsMap := map[string]bool{}
+
+	// Import bookmarks in batches
+	for {
+		var batch []*models.Bookmark
+
+		if imported+batchSize < total {
+			batch = bookmarks[imported : imported+batchSize]
+		} else {
+			batch = bookmarks[imported:]
+		}
+
+		query := `
+		INSERT INTO 
+		bookmarks (name, lower_name, description, content, project, created_at, updated_at) 
+		VALUES `
+
+		argList := "(?,?,?,?,?,?,?)"
+		args := make([]interface{}, len(batch)*7)
+
+		// Parse each bookmark, put tags to map, put bookmark to args list
+		for i, v := range batch {
+			if i > 0 {
+				query += ","
+			}
+			query += argList
+			v.Id = id
+			id += 1
+
+			if v.LowerName == "" {
+				v.LowerName = strings.ToLower(v.Name)
+			}
+			if v.CreatedAt == time.Unix(0, 0) {
+				v.CreatedAt = time.Now()
+			}
+			if v.UpdatedAt == time.Unix(0, 0) {
+				v.UpdatedAt = time.Now()
+			}
+
+			if len(AddTags) > 0 {
+				v.AddTags(AddTags)
+			}
+			args[7*i] = v.Name
+			args[7*i+1] = v.LowerName
+			args[7*i+2] = v.Description
+			args[7*i+3] = v.Content
+			args[7*i+4] = v.Project
+			args[7*i+5] = v.CreatedAt
+			args[7*i+6] = v.UpdatedAt
+
+			if len(v.Tags) > 0 {
+				for _, t := range v.Tags {
+					tagsMap[t] = true
+				}
+			}
+		}
+		query += ";"
+
+		res, err := tx.Exec(query, args...)
+		if err != nil {
+			_ = tx.Rollback()
+			return fmt.Errorf("insert bookmarks: %v", err)
+		}
+
+		rows, err := res.RowsAffected()
+		if int(rows) != len(batch) {
+			logrus.Warning("Some bookmarks were not stored properly during import, probably due to duplicate")
+		}
+		imported += len(batch)
+		if imported == total {
+			break
+		}
+	}
+
+	//Tags
+	tags := make([]string, len(tagsMap))
+	i := 0
+	for key, _ := range tagsMap {
+		tags[i] = key
+		i += 1
+	}
+	err = d.InsertTags(tags, tx)
+
+	if err != nil {
+		_ = tx.Rollback()
+		return fmt.Errorf("insert tags: %v", err)
+	}
+
+	//Tags bookmarks relations
+	//Add tags one bookmark at a time for now
+	for _, v := range bookmarks {
+		if len(v.Tags) > 0 {
+			err = d.UpdateBookmarkTags(v, v.Tags, tx)
+			if err != nil {
+				break
+			}
+		}
+	}
+
+	if err != nil {
+		_ = tx.Rollback()
+		return fmt.Errorf("udpate bookmark tags relations: %v", err)
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return fmt.Errorf("transaction failed: %v", err)
+	}
+
+	return nil
 }
 
 func (d *Database) GetBookmarkMetadata(bookmark *models.Bookmark) error {
@@ -314,11 +459,11 @@ WHERE id = ?;
 	}
 
 	if len(b.Tags) > 0 {
-		err = d.InsertTags(b.Tags)
+		err = d.InsertTags(b.Tags, nil)
 		if err != nil {
 			logrus.Errorf("Insert tags: %v", err)
 		} else {
-			err = d.UpdateBookmarkTags(b, b.Tags)
+			err = d.UpdateBookmarkTags(b, b.Tags, nil)
 			if err != nil {
 				logrus.Errorf("Update bookmark tags: %v", err)
 			}
@@ -403,7 +548,7 @@ LIMIT 100;
 	return bookmarks, nil
 }
 
-func (d *Database) InsertTags(tags []string) error {
+func (d *Database) InsertTags(tags []string, tx *sqlx.Tx) error {
 	query := "INSERT INTO tags (name) VALUES "
 
 	args := make([]interface{}, len(tags))
@@ -415,17 +560,25 @@ func (d *Database) InsertTags(tags []string) error {
 		args[i] = v
 	}
 	query += " ON CONFLICT (name) DO NOTHING;"
-	_, err := d.conn.Exec(query, args...)
+
+	var err error
+
+	if tx != nil {
+		_, err = tx.Exec(query, args...)
+	} else {
+		_, err = d.conn.Exec(query, args...)
+	}
 	return err
 }
 
-//AddTagsToBookmark adds tags to bookmark. Tags must exist before calling this function
-func (d *Database) UpdateBookmarkTags(bookmark *models.Bookmark, tags []string) error {
+//AddTagsToBookmark adds tags to bookmark. Tags must exist before calling this function.
+//If tx is nil, use database connection directly
+func (d *Database) UpdateBookmarkTags(bookmark *models.Bookmark, tags []string, tx *sqlx.Tx) error {
 	query := `DELETE FROM main.bookmark_tags WHERE bookmark_tags.bookmark = ?; INSERT INTO bookmark_tags (bookmark, tag)
 	SELECT
-		bookmarks.id AS bookmark,
+		bookmark,
 		tag.id AS tag
-		FROM bookmarks
+		FROM (SELECT ? AS bookmark) 
 		LEFT JOIN (SELECT id FROM tags WHERE name IN (`
 
 	args := make([]interface{}, len(tags)+2)
@@ -439,7 +592,21 @@ func (d *Database) UpdateBookmarkTags(bookmark *models.Bookmark, tags []string) 
 	}
 
 	args[len(args)-1] = bookmark.Id
-	query += ")) AS tag WHERE bookmark = ?;"
-	_, err := d.conn.Exec(query, args...)
+	query += ")) AS tag;"
+
+	var err error
+	if tx != nil {
+		_, err = tx.Exec(query, args...)
+	} else {
+		_, err = d.conn.Exec(query, args...)
+	}
 	return err
+}
+
+//RenameProject renames project and all its children.
+// e.g. old: my-awesome-project, new: project:
+// results in my-awesome-project.a -> project.a
+func (d *Database) RenameProject(old string, new string) error {
+	return nil
+
 }

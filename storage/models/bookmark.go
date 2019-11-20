@@ -102,3 +102,14 @@ func (b *Bookmark) FillDefaultMetadata() {
 		(*b.Metadata)[v] = ""
 	}
 }
+
+//AddTag adds tag to bookmark. No duplicates are removed
+func (b *Bookmark) AddTag(tag string) {
+	b.Tags = append(b.Tags, tag)
+}
+
+//AddTags adds multiple tags to bookmark. No duplicates are removed
+func (b *Bookmark) AddTags(tags []string) {
+	b.Tags = append(b.Tags, tags...)
+
+}

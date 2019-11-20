@@ -28,8 +28,15 @@ import (
 )
 
 // Content inside these directories will be skipped
+// Note: this doesn't take into account the level of folder, any folder matching this will be skipped
 var skipFolderNames = []string{
 	"Recently Bookmarked",
+}
+
+// Folders names that match these are replaced with ""
+// Note: this doesn't take into account the level of folder, any folder name matching this will be removed
+var removeFolderNames = []string{
+	"Bookmarks Toolbar",
 }
 
 // Replace dots to avoid unwanted recursion. Change folder names e.g. mypage.com -> mypage-com.
@@ -39,7 +46,7 @@ const replaceDots = "-"
 const separator = "."
 
 //ImportBookmarksHtml parses bookmark.html export and returns an array of bookmarks and possible error
-func ImportBookmarksHtml(reader io.Reader) ([]*models.Bookmark, error) {
+func ImportBookmarksHtml(reader io.Reader, mapFoldersProjects bool) ([]*models.Bookmark, error) {
 	doc, err := html.Parse(reader)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse document: %v", err)
@@ -61,13 +68,21 @@ func ImportBookmarksHtml(reader io.Reader) ([]*models.Bookmark, error) {
 		if node.Type == html.ElementNode && node.Data == "h3" && node.FirstChild != nil {
 			f = node.FirstChild.Data
 
-			if strings.Contains(f, separator) {
-				f = strings.Replace(f, separator, replaceDots, -1)
+			skip := false
+			for _, name := range removeFolderNames {
+				if f == name {
+					skip = true
+					break
+				}
 			}
 
-			folder = append(folder, f)
-
-			foundDir = true
+			if !skip {
+				if strings.Contains(f, separator) {
+					f = strings.Replace(f, separator, replaceDots, -1)
+				}
+				folder = append(folder, f)
+				foundDir = true
+			}
 		}
 
 		// Parse bookmark
@@ -76,13 +91,13 @@ func ImportBookmarksHtml(reader io.Reader) ([]*models.Bookmark, error) {
 			for _, v := range node.Parent.Attr {
 				keys[v.Key] = v.Val
 			}
-
 			if len(keys) > 0 {
 				b := keysTobookmark(keys)
 				b.Name = node.Data
-				b.Project = strings.Join(folder, separator)
+				if mapFoldersProjects {
+					b.Project = strings.Join(folder, separator)
+				}
 				bookmarks = append(bookmarks, b)
-
 				(*folderCounts)[strings.Join(folder, ".")] += 1
 			}
 		}
@@ -93,6 +108,7 @@ func ImportBookmarksHtml(reader io.Reader) ([]*models.Bookmark, error) {
 			if f == v {
 				logrus.Info("Skipping folder ", strings.Join(folder, separator))
 				skipFolder = true
+				break
 			}
 		}
 

@@ -17,9 +17,12 @@
 package ui
 
 import (
+	"fmt"
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
 	"github.com/sirupsen/logrus"
+	"os"
+	"time"
 	"tryffel.net/go/twidgets"
 	"tryffel.net/pkg/bookmarker/config"
 	"tryffel.net/pkg/bookmarker/external"
@@ -48,6 +51,8 @@ type Window struct {
 	bookmarks  *BookmarkTable
 	metadata   *Metadata
 	search     *Search
+	menu       *modals.Menu
+	importForm *modals.ImportForm
 	searchOpen bool
 
 	help         *modals.Help
@@ -91,7 +96,6 @@ func (w *Window) inputCapture(event *tcell.EventKey) *tcell.EventKey {
 	navbar := config.Configuration.Shortcuts.NavBar
 	key := event.Key()
 	switch key {
-	case navbar.Menu:
 	case navbar.Help:
 		if !w.hasModal {
 			w.addModal(w.help, twidgets.ModalSizeMedium)
@@ -107,6 +111,8 @@ func (w *Window) inputCapture(event *tcell.EventKey) *tcell.EventKey {
 		if err != nil {
 			logrus.Errorf("Open link in browser: %v", err)
 		}
+	case navbar.Menu:
+		w.addModal(w.menu, twidgets.ModalSizeMedium)
 	case tcell.KeyEscape:
 		if w.hasModal {
 			w.layout.RemoveModal(w.modal)
@@ -162,7 +168,7 @@ func (w *Window) addModal(modal twidgets.Modal, size twidgets.ModalSize) {
 
 		w.lastFocus = w.app.GetFocus()
 		w.app.SetFocus(modal)
-		w.modal = w.bookmarkForm
+		w.modal = modal
 		w.hasModal = true
 	}
 }
@@ -181,13 +187,14 @@ func (w *Window) GetFocusable() tview.Focusable {
 
 func NewWindow(colors config.Colors, shortcuts *config.Shortcuts, db *storage.Database) *Window {
 	w := &Window{
-		app:     tview.NewApplication(),
-		db:      db,
-		layout:  twidgets.NewModalLayout(),
-		grid:    tview.NewGrid(),
-		project: NewProjects(),
-		tags:    NewTags(),
-		help:    modals.NewHelp(),
+		app:        tview.NewApplication(),
+		db:         db,
+		layout:     twidgets.NewModalLayout(),
+		grid:       tview.NewGrid(),
+		project:    NewProjects(),
+		tags:       NewTags(),
+		help:       modals.NewHelp(),
+		importForm: modals.NewImportForm(),
 	}
 
 	w.app.SetRoot(w, true)
@@ -200,6 +207,9 @@ func NewWindow(colors config.Colors, shortcuts *config.Shortcuts, db *storage.Da
 	w.grid.SetBackgroundColor(colors.Background)
 	w.search = NewSearch(w.Search)
 	w.project.SetSelectFunc(w.FilterByProject)
+	w.menu = modals.NewMenu()
+	w.menu.SetActionFunc(w.menuAction)
+	w.importForm.SetCreateFunc(w.doImport)
 
 	w.gridSize = 6
 	w.grid.SetRows(1, -1)
@@ -312,6 +322,7 @@ func (w *Window) createBookmark(bookmark *models.Bookmark) {
 	if err != nil {
 		logrus.Error("Failed to create bookmark: ", err)
 	} else {
+		w.bookmarkForm.Clear()
 		bookmarks, err := w.db.GetAllBookmarks()
 		if err != nil {
 			return
@@ -360,5 +371,62 @@ func (w *Window) FilterByProject(project *models.Project) {
 		} else {
 			w.bookmarks.SetData(bookmarks)
 		}
+	}
+}
+
+func (w *Window) menuAction(action modals.MenuAction) {
+	switch action {
+	case modals.MenuActionNone:
+	case modals.MenuActionImport:
+		w.layout.RemoveModal(w.modal)
+		w.hasModal = false
+		w.addModal(w.importForm, twidgets.ModalSizeMedium)
+	}
+}
+
+func (w *Window) doImport(data *modals.ImportData) {
+	logrus.Info("User wants to import: ", data)
+
+	ok := false
+	msg := ""
+	count := 0
+
+	file, err := os.Open(data.File)
+	defer file.Close()
+	if err != nil {
+		logrus.Error(err)
+		msg = fmt.Errorf("failed to open file: %v", err).Error()
+	} else {
+		start := time.Now()
+		bookmarks, err := external.ImportBookmarksHtml(file, data.MapFoldersProjects)
+		if err != nil {
+			logrus.Error(err)
+			msg = fmt.Errorf("parse bookmarks.html: %v", err).Error()
+		} else {
+			err = w.db.NewBookmarks(bookmarks, data.Tags)
+			took := time.Since(start)
+			if err != nil {
+				logrus.Error("Batch import and create bookmarks: %v", err)
+				msg = fmt.Errorf("save new bookmarks: %v", err).Error()
+			} else {
+				logrus.Infof("Imported %d bookmarks in %d ms", len(bookmarks), took.Milliseconds())
+				ok = true
+				msg = fmt.Sprintf("Took %d ms", took.Milliseconds())
+				count = len(bookmarks)
+			}
+		}
+	}
+	w.importForm.SetDoneFunc(w.closeImport)
+	w.importForm.ImportDone(count, msg, ok)
+}
+
+func (w *Window) closeImport() {
+	w.importForm.Reset()
+	if w.hasModal {
+		w.layout.RemoveModal(w.modal)
+		w.app.SetFocus(w.lastFocus)
+		w.lastFocus = nil
+		w.modal = nil
+		w.hasModal = false
 	}
 }
