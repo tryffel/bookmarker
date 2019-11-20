@@ -50,7 +50,7 @@ LEFT JOIN bookmark_tags bt ON b.id = bt.bookmark
 LEFT JOIN tags t ON bt.tag = t.id
 GROUP BY b.id
 ORDER BY b.name ASC
-LIMIT 100;
+LIMIT 500;
 `
 
 	rows, err := d.conn.Query(query)
