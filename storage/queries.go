@@ -610,3 +610,12 @@ func (d *Database) RenameProject(old string, new string) error {
 	return nil
 
 }
+
+func (d *Database) DeleteBookmark(bookmark *models.Bookmark) error {
+	query := `
+DELETE FROM bookmarks
+WHERE bookmarks.id = ?`
+
+	_, err := d.conn.Exec(query, bookmark.Id)
+	return err
+}

@@ -29,6 +29,7 @@ type BookmarkTable struct {
 	items        []*models.Bookmark
 	hasFocus     bool
 	metadataFunc func(bookmark *models.Bookmark)
+	deleteFunc   func(bookmark *models.Bookmark)
 }
 
 func (b *BookmarkTable) Draw(screen tcell.Screen) {
@@ -50,6 +51,13 @@ func (b *BookmarkTable) InputHandler() func(event *tcell.EventKey, setFocus func
 			selected, _ := b.table.GetSelection()
 			bookmark := b.items[selected]
 			b.metadataFunc(bookmark)
+		} else if key == tcell.KeyDelete {
+			if b.deleteFunc != nil {
+				index, _ := b.table.GetSelection()
+				bookmark := b.items[index-1]
+				b.deleteFunc(bookmark)
+			}
+
 		} else {
 			b.table.InputHandler()(event, setFocus)
 		}
@@ -100,8 +108,15 @@ func (b *BookmarkTable) SetData(data []*models.Bookmark) {
 		b.table.SetCell(i+1, 6, tableCell(ShortTimeSince(v.CreatedAt)).SetMaxWidth(15))
 	}
 
+}
+
+func (b *BookmarkTable) ResetCursor() {
 	b.table.Select(1, 0)
 
+}
+
+func (b *BookmarkTable) SetDeleteFunc(delete func(bookmark *models.Bookmark)) {
+	b.deleteFunc = delete
 }
 
 func tableCell(text string) *tview.TableCell {
@@ -136,4 +151,15 @@ func NewBookmarkTable(openMetadata func(bookmark *models.Bookmark)) *BookmarkTab
 	b.table.SetFixed(1, 10)
 
 	return b
+}
+
+func (b *BookmarkTable) GetSelection() *models.Bookmark {
+	index, _ := b.table.GetSelection()
+	if b.items == nil {
+		return nil
+	}
+	if index > len(b.items) {
+		return nil
+	}
+	return b.items[index-1]
 }

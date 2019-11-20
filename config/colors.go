@@ -28,38 +28,46 @@ const (
 )
 
 type Colors struct {
-	Background          tcell.Color
-	TextPrimary         tcell.Color
-	TextPrimaryLight    tcell.Color
-	TextPrimaryDim      tcell.Color
-	SelectionBackground tcell.Color
-	SelectionText       tcell.Color
-	Border              tcell.Color
-	BorderFocus         tcell.Color
-	NavBar              ColorNavBar
-	Bookmarks           ColorBookmarks
-	Projects            ColorProjects
-	BookmarkForm        ColorBookmarkForm
-	Tags                ColorTags
-	Metadata            ColorMetadata
+	Background               tcell.Color
+	TextPrimary              tcell.Color
+	TextPrimaryLight         tcell.Color
+	TextPrimaryDim           tcell.Color
+	SelectionBackground      tcell.Color
+	SelectionText            tcell.Color
+	Border                   tcell.Color
+	BorderFocus              tcell.Color
+	ButtonBackground         tcell.Color
+	ButtonBackgroundSelected tcell.Color
+	ButtonLabel              tcell.Color
+	ButtonLabelSelected      tcell.Color
+	NavBar                   ColorNavBar
+	Bookmarks                ColorBookmarks
+	Projects                 ColorProjects
+	BookmarkForm             ColorBookmarkForm
+	Tags                     ColorTags
+	Metadata                 ColorMetadata
 }
 
 func defaultColors() Colors {
 	return Colors{
-		Background:          colorBackground,
-		TextPrimary:         tcell.Color252,
-		TextPrimaryLight:    tcell.Color254,
-		TextPrimaryDim:      tcell.Color249,
-		SelectionBackground: tcell.Color23,
-		SelectionText:       tcell.Color253,
-		Border:              tcell.Color246,
-		BorderFocus:         tcell.Color253,
-		NavBar:              defaultColorNavBar(),
-		Bookmarks:           defaultColorBookmarks(),
-		Projects:            defaultColorProjects(),
-		BookmarkForm:        defaultColorBookmarkform(),
-		Tags:                defaultColorTags(),
-		Metadata:            defaultColorMetadata(),
+		Background:               colorBackground,
+		TextPrimary:              tcell.Color252,
+		TextPrimaryLight:         tcell.Color254,
+		TextPrimaryDim:           tcell.Color249,
+		SelectionBackground:      tcell.Color23,
+		SelectionText:            tcell.Color253,
+		Border:                   tcell.Color246,
+		BorderFocus:              tcell.Color253,
+		ButtonBackground:         tcell.Color241,
+		ButtonBackgroundSelected: tcell.Color23,
+		ButtonLabel:              tcell.Color254,
+		ButtonLabelSelected:      tcell.Color253,
+		NavBar:                   defaultColorNavBar(),
+		Bookmarks:                defaultColorBookmarks(),
+		Projects:                 defaultColorProjects(),
+		BookmarkForm:             defaultColorBookmarkform(),
+		Tags:                     defaultColorTags(),
+		Metadata:                 defaultColorMetadata(),
 	}
 }
 

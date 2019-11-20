@@ -201,6 +201,7 @@ func NewWindow(colors config.Colors, shortcuts *config.Shortcuts, db *storage.Da
 	w.app.SetInputCapture(w.inputCapture)
 
 	w.bookmarks = NewBookmarkTable(w.openBookmark)
+	w.bookmarks.SetDeleteFunc(w.deleteBookmark)
 	w.metadata = NewMetadata(w.closeMetadata)
 
 	w.bookmarkForm = modals.NewBookmarkForm(w.createBookmark)
@@ -289,7 +290,6 @@ func (w *Window) openBookmark(b *models.Bookmark) {
 
 func (w *Window) openMetadata() {
 	w.lastFocus = w.app.GetFocus()
-	w.app.SetFocus(w.metadata)
 
 	//w.grid.Blur()
 	//w.metadata.Focus(func(p tview.Primitive){})
@@ -313,6 +313,7 @@ func (w *Window) openMetadata() {
 		w.metadata.setData(bookmark)
 	})
 	w.metadataOpen = true
+	w.app.SetFocus(w.metadata)
 }
 
 func (w *Window) createBookmark(bookmark *models.Bookmark) {
@@ -346,6 +347,7 @@ func (w *Window) Search(text string) {
 	}
 
 	w.bookmarks.SetData(bookmarks)
+	w.bookmarks.ResetCursor()
 }
 
 func (w *Window) FilterByProject(project *models.Project) {
@@ -355,6 +357,7 @@ func (w *Window) FilterByProject(project *models.Project) {
 			logrus.Error("Get all bookmarks: %v", err)
 		} else {
 			w.bookmarks.SetData(bookmarks)
+			w.bookmarks.ResetCursor()
 		}
 	} else {
 		name := ""
@@ -370,6 +373,7 @@ func (w *Window) FilterByProject(project *models.Project) {
 			logrus.Error("Get bookmarks by project: %v", err)
 		} else {
 			w.bookmarks.SetData(bookmarks)
+			w.bookmarks.ResetCursor()
 		}
 	}
 }
@@ -422,6 +426,10 @@ func (w *Window) doImport(data *modals.ImportData) {
 
 func (w *Window) closeImport() {
 	w.importForm.Reset()
+	w.closeModal()
+}
+
+func (w *Window) closeModal() {
 	if w.hasModal {
 		w.layout.RemoveModal(w.modal)
 		w.app.SetFocus(w.lastFocus)
@@ -429,4 +437,28 @@ func (w *Window) closeImport() {
 		w.modal = nil
 		w.hasModal = false
 	}
+}
+
+func (w *Window) deleteBookmark(bookmark *models.Bookmark) {
+	doneFunc := func(del bool) {
+		if del {
+			err := w.db.DeleteBookmark(bookmark)
+			if err != nil {
+				logrus.Errorf("Delete bookmark: %v", err)
+			}
+			w.RefreshBookmarks()
+		}
+		w.closeModal()
+	}
+
+	del := modals.NewDeleteBookmark(doneFunc, bookmark)
+	w.addModal(del, twidgets.ModalSizeSmall)
+}
+
+func (w *Window) RefreshBookmarks() {
+	bookmarks, err := w.db.GetAllBookmarks()
+	if err != nil {
+		return
+	}
+	w.bookmarks.SetData(bookmarks)
 }
