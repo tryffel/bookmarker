@@ -468,3 +468,15 @@ func (w *Window) RefreshBookmarks() {
 	}
 	w.bookmarks.SetData(bookmarks)
 }
+
+func (w *Window) Run() error {
+	bookmarks, _ := w.db.GetAllBookmarks()
+	projects, _ := w.db.GetProjects("", false)
+	tags, _ := w.db.GetTags()
+
+	w.bookmarks.SetData(bookmarks)
+	w.tags.SetData(tags)
+	w.project.SetData(projects)
+
+	return w.app.Run()
+}

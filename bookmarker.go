@@ -20,6 +20,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/sirupsen/logrus"
 	prefixed "github.com/x-cray/logrus-prefixed-formatter"
 	"os"
@@ -87,8 +88,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	app := ui.NewApplication(conf.Colors, &conf.Shortcuts, db)
-	app.Initdata()
-	app.Run()
+	app := ui.NewWindow(conf.Colors, &conf.Shortcuts, db)
+	err = app.Run()
+	if err != nil {
+		fmt.Printf("Failed to open gui: %v", err)
+		os.Exit(1)
+	}
 
 }

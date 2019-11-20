@@ -95,11 +95,6 @@ func (h *Help) Update(stats *storage.Statistics) {
 	runStats := runtime.MemStats{}
 	runtime.ReadMemStats(&runStats)
 
-	//stat := fmt.Sprintf("Last GC: %s\nNext GC: %s",
-	//	time.Unix(0, int64(stats.LastGC)).Format(timeFormat), time.Unix(0, int64(stats.NextGC)).Format(timeFormat))
-
-	//text += "\n" + stat
-
 	timeFormat := "2006-01-02 15:04:05"
 	text += fmt.Sprintf("Statistics:\nBookmarks: %d\nTags: %d\nProjects: %d\nLast Bookmark: %s\n",
 		stats.Bookmarks, stats.Tags, stats.Projects, stats.LastBookmark.Format(timeFormat))
