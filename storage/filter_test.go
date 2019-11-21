@@ -25,49 +25,57 @@ func Test_tokenize(t *testing.T) {
 	tests := []struct {
 		name    string
 		query   string
-		want    *map[string]string
+		want    *map[string]StringFilter
 		wantErr bool
 	}{{
 		name:  "simple query",
 		query: "want:one test:two",
-		want: &map[string]string{
-			"want": "one",
-			"test": "two",
+		want: &map[string]StringFilter{
+			"want": {Name: "one"},
+			"test": {Name: "two"},
 		},
 		wantErr: false,
 	},
 		{
+			name:  "plain query",
+			query: "bookmark",
+			want: &map[string]StringFilter{
+				"query": {Name: "bookmark"},
+			},
+			wantErr: false,
+		},
+		{
 			name:    "empty query",
 			query:   "",
-			want:    &map[string]string{},
+			want:    &map[string]StringFilter{},
 			wantErr: false,
 		},
 		{
 			name:  "single value",
 			query: "test:one",
-			want: &map[string]string{
-				"test": "one",
+			want: &map[string]StringFilter{
+				"test": {Name: "one"},
 			},
 			wantErr: false,
 		},
 		{
 			name:  "value and query",
 			query: "test:one two",
-			want: &map[string]string{
-				"test":  "one",
-				"query": "two",
+			want: &map[string]StringFilter{
+				"test":  {Name: "one"},
+				"query": {Name: "two"},
 			},
 			wantErr: false,
 		},
 		{
 			name:    "key with no value",
 			query:   "test: ",
-			want:    &map[string]string{},
+			want:    &map[string]StringFilter{},
 			wantErr: true,
 		},
 
 		/*
-				{
+			{
 				name: "value with space",
 				query: "test:'one two'",
 				want: &map[string]string{

@@ -39,6 +39,8 @@ type Filter struct {
 	CustomTags    map[string]StringFilter
 	SortField     string
 	SortDir       string
+	Query         string
+	isPlain       bool
 }
 
 //NewFilter parses and constructs new filter based on raw query.
@@ -47,7 +49,9 @@ type Filter struct {
 //Strict match: enclose word with '\'',
 //
 func NewFilter(query string) (*Filter, error) {
-	f := &Filter{}
+	f := &Filter{
+		CustomTags: map[string]StringFilter{},
+	}
 	tokens, err := tokenizeQuery(query)
 	if err != nil {
 		return f, err
@@ -59,7 +63,26 @@ func NewFilter(query string) (*Filter, error) {
 	return f, nil
 }
 
+func (f *Filter) IsPlainQuery() bool {
+	return f.isPlain
+}
+
+func (f *Filter) CustomOnly() bool {
+	return f.Name.Name == "" &&
+		f.Description.Name == "" &&
+		f.Project.Name == "" &&
+		f.Content.Name == "" &&
+		f.Tags.Name == "" &&
+		f.Query == ""
+}
+
 func (f *Filter) parseTokens(tokens *map[string]StringFilter) error {
+	if (*tokens)["query"].Name != "" {
+		f.isPlain = true
+		f.Query = (*tokens)["query"].Name
+		return nil
+	}
+
 	for key, value := range *tokens {
 		switch strings.ToLower(key) {
 		case "name":
@@ -70,7 +93,8 @@ func (f *Filter) parseTokens(tokens *map[string]StringFilter) error {
 			f.Project = value
 		case "tags":
 			f.Tags = value
-		case "content":
+			f.Tags.Strict = false
+		case "link":
 			f.Content = value
 		case "after":
 			//f.CreatedAfter = value

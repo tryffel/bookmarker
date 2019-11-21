@@ -34,6 +34,33 @@ type name struct {
 	Name string `db:"name"`
 }
 
+type query struct {
+	start time.Time
+	query string
+	name  string
+}
+
+func beginQuery(Query string, name string) *query {
+	q := &query{
+		start: time.Now(),
+		query: Query,
+		name:  name,
+	}
+	return q
+}
+
+func (q *query) log(err error) {
+	took := time.Since(q.start)
+	ms := took.Milliseconds()
+
+	if err != nil {
+		query := strings.Replace(q.query, "\n", " ", -1)
+		logrus.Errorf("Sql '%s': %s: %v", q.name, query, err)
+	} else {
+		logrus.Debugf("Sql %s in %d ms", q.name, ms)
+	}
+}
+
 func (d *Database) GetAllBookmarks() ([]*models.Bookmark, error) {
 	query := `
 SELECT
@@ -657,4 +684,149 @@ LIMIT 1
 	rows.Next()
 	err = rows.Scan(&s.LastBookmark)
 	return s, err
+}
+
+//Construct query from filter. Return values: query, parameters, error
+func (d *Database) constructFilter(filter *Filter) (string, *[]interface{}, error) {
+	params := &[]interface{}{}
+	queryMetadata := `
+SELECT * FROM
+(
+	SELECT
+	b.id AS id,
+	b.name AS name,
+	b.description AS description,
+	b.content AS content,
+	b.project AS project,
+	b.created_at AS created_at,
+	b.updated_at AS updated_at,
+	-- skip tags for now
+	'' as tags
+FROM bookmarks b
+LEFT outer JOIN metadata m on b.id = m.bookmark
+WHERE `
+
+	queryBookmark := `
+SELECT
+	b.id as id,
+	b.name AS name,
+	b.description AS description,
+	b.content as content,
+	b.project AS project,
+	b.created_at AS created_at,
+	b.updated_at AS updated_at,
+GROUP_CONCAT(t.name) AS tags
+FROM bookmarks b
+LEFT JOIN bookmark_tags bt ON b.id = bt.bookmark
+LEFT JOIN tags t ON bt.tag = t.id
+	WHERE `
+
+	queryEnd := `
+GROUP BY b.id
+ORDER BY b.name ASC
+LIMIT 300;`
+
+	queryEndMetadata := ` ) AS a
+GROUP BY a.id
+ORDER BY a.name ASC
+LIMIT 300;`
+
+	query := ""
+
+	metadata := false
+	if len(filter.CustomTags) > 0 {
+		metadata = true
+		query = queryMetadata
+	}
+	i := 0
+	for key, filt := range filter.CustomTags {
+		if i > 0 {
+			query += " AND "
+		}
+
+		query += "(m.key_lower = ? AND "
+		*params = append(*params, strings.ToLower(key))
+		if filt.Strict {
+			query += "m.value_lower = ?) "
+			*params = append(*params, strings.ToLower(filt.Name))
+		} else {
+			query += "m.value_lower LIKE ?) "
+			*params = append(*params, "%"+strings.ToLower(filt.Name)+"%")
+		}
+		i += 1
+	}
+	if !filter.CustomOnly() {
+		if metadata {
+			query += "UNION"
+		}
+
+		query += queryBookmark
+
+		data := map[string]StringFilter{
+			"b.lower_name":  filter.Name,
+			"b.description": filter.Description,
+			"b.content":     filter.Content,
+			"b.project":     filter.Project,
+			//"b.tags": 		 filter.Tags,
+		}
+
+		i = 0
+		for key, filt := range data {
+			if filt.Name != "" {
+				if i > 0 {
+					query += " AND "
+				}
+				query += "(" + key
+				if filt.Strict {
+					query += " = ?)"
+					*params = append(*params, strings.ToLower(filt.Name))
+				} else {
+					query += " LIKE ?)"
+					*params = append(*params, "%"+strings.ToLower(filt.Name)+"%")
+				}
+				i += 1
+			}
+		}
+	}
+
+	if metadata {
+		query += queryEndMetadata
+	} else if !filter.CustomOnly() {
+		query += queryEnd
+	}
+	return query, params, nil
+}
+
+func (d *Database) SearchBookmarksFilter(filter *Filter) ([]*models.Bookmark, error) {
+	query, params, err := d.constructFilter(filter)
+	if err != nil {
+		return nil, err
+	}
+
+	logger := beginQuery(query, "filter bookmarks")
+
+	rows, err := d.conn.Query(query, *params...)
+	if err != nil {
+		logger.log(err)
+		return nil, err
+	}
+
+	bookmarks := []*models.Bookmark{}
+	for rows.Next() {
+		var tag sql.NullString
+		b := models.Bookmark{}
+
+		err := rows.Scan(&b.Id, &b.Name, &b.Description, &b.Content, &b.Project, &b.CreatedAt, &b.UpdatedAt, &tag)
+		if err != nil {
+			logrus.Errorf("scan bookmark rows: %v", err)
+		}
+
+		if tag.String != "" {
+			b.Tags = strings.Split(tag.String, ",")
+		}
+
+		bookmarks = append(bookmarks, &b)
+	}
+	logger.log(err)
+	return bookmarks, nil
 }
