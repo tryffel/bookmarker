@@ -146,7 +146,7 @@ ORDER BY tags.name ASC;
 		var count int
 		err = rows.Scan(&tag, &count)
 		if err != nil {
-			logrus.Error("Error scanning row: %v", err)
+			logrus.Errorf("Error scanning row: %v", err)
 		}
 
 		if tag.String != "" {
@@ -177,7 +177,7 @@ VALUES (?,?,?,?,?,?,?); SELECT last_insert_rowid() FROM bookmarks`
 	b.Id = int(id)
 	err = d.upsertMetadata(b)
 	if err != nil {
-		logrus.Error("Insert / update bookmark metadata: %v", err)
+		logrus.Errorf("Insert / update bookmark metadata: %v", err)
 	}
 	if len(b.Tags) > 0 {
 		err = d.InsertTags(b.Tags, nil)
@@ -357,7 +357,7 @@ ORDER BY metadata.bookmark ASC,
 
 		err = rows.Scan(&key, &value)
 		if err != nil {
-			logrus.Errorf("scan rows: &v", err)
+			logrus.Errorf("scan rows: %v", err)
 		}
 
 		(*bookmark.Metadata)[key] = value
