@@ -208,6 +208,7 @@ func NewWindow(colors config.Colors, shortcuts *config.Shortcuts, db *storage.Da
 	w.app.SetRoot(w, true)
 	w.app.SetInputCapture(w.inputCapture)
 
+	w.layout.SetGridYSize([]int{3, -1, -1, -1, -1, -1, -1, -1, -1, 3})
 	w.bookmarks = NewBookmarkTable(w.openBookmark)
 	w.bookmarks.SetDeleteFunc(w.deleteBookmark)
 	w.metadata = NewMetadata(w.closeMetadata)
@@ -223,7 +224,7 @@ func NewWindow(colors config.Colors, shortcuts *config.Shortcuts, db *storage.Da
 	w.gridSize = 6
 	w.grid.SetRows(1, -1)
 	w.grid.SetColumns(-1)
-	w.grid.SetMinSize(2, 2)
+	w.grid.SetMinSize(1, 2)
 
 	col := colors.NavBar.ToNavBar()
 
