@@ -7,7 +7,9 @@ require (
 	github.com/gdamore/tcell v1.3.0
 	github.com/jmoiron/sqlx v1.2.0
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
+	github.com/lucasb-eyer/go-colorful v1.0.3 // indirect
 	github.com/mattn/go-colorable v0.1.4 // indirect
+	github.com/mattn/go-runewidth v0.0.6 // indirect
 	github.com/mattn/go-sqlite3 v1.11.0
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b // indirect
 	github.com/onsi/ginkgo v1.10.3 // indirect
@@ -17,7 +19,7 @@ require (
 	github.com/x-cray/logrus-prefixed-formatter v0.5.2
 	golang.org/x/crypto v0.0.0-20191029031824-8986dd9e96cf // indirect
 	golang.org/x/net v0.0.0-20190603091049-60506f45cf65
-	golang.org/x/sys v0.0.0-20191104094858-e8c54fb511f6 // indirect
+	golang.org/x/sys v0.0.0-20191120155948-bd437916bb0e // indirect
 	google.golang.org/appengine v1.6.5 // indirect
-	tryffel.net/go/twidgets v0.0.0-20191117130949-3aa4d9e591dc
+	tryffel.net/go/twidgets v0.0.0-20191121195747-7b5ff8b0d39c
 )
