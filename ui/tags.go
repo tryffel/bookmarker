@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
-	"tryffel.net/pkg/bookmarker/config"
+	"tryffel.net/go/bookmarker/config"
 )
 
 type Tags struct {

@@ -25,10 +25,10 @@ import (
 	prefixed "github.com/x-cray/logrus-prefixed-formatter"
 	"os"
 	"sync"
-	"tryffel.net/pkg/bookmarker/config"
-	"tryffel.net/pkg/bookmarker/storage"
-	"tryffel.net/pkg/bookmarker/storage/migrations"
-	"tryffel.net/pkg/bookmarker/ui"
+	"tryffel.net/go/bookmarker/config"
+	"tryffel.net/go/bookmarker/storage"
+	"tryffel.net/go/bookmarker/storage/migrations"
+	"tryffel.net/go/bookmarker/ui"
 )
 
 func main() {

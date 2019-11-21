@@ -21,8 +21,8 @@ import (
 	"github.com/rivo/tview"
 	"strings"
 	"time"
-	"tryffel.net/pkg/bookmarker/config"
-	"tryffel.net/pkg/bookmarker/storage/models"
+	"tryffel.net/go/bookmarker/config"
+	"tryffel.net/go/bookmarker/storage/models"
 )
 
 const (

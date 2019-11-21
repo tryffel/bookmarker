@@ -24,7 +24,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"tryffel.net/pkg/bookmarker/storage/models"
+	"tryffel.net/go/bookmarker/storage/models"
 )
 
 // Content inside these directories will be skipped

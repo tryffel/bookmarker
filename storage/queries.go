@@ -26,7 +26,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"strings"
 	"time"
-	"tryffel.net/pkg/bookmarker/storage/models"
+	"tryffel.net/go/bookmarker/storage/models"
 )
 
 //name is any query result that has field 'Name'

@@ -23,12 +23,12 @@ import (
 	"github.com/sirupsen/logrus"
 	"os"
 	"time"
+	"tryffel.net/go/bookmarker/config"
+	"tryffel.net/go/bookmarker/external"
+	"tryffel.net/go/bookmarker/storage"
+	"tryffel.net/go/bookmarker/storage/models"
+	"tryffel.net/go/bookmarker/ui/modals"
 	"tryffel.net/go/twidgets"
-	"tryffel.net/pkg/bookmarker/config"
-	"tryffel.net/pkg/bookmarker/external"
-	"tryffel.net/pkg/bookmarker/storage"
-	"tryffel.net/pkg/bookmarker/storage/models"
-	"tryffel.net/pkg/bookmarker/ui/modals"
 )
 
 var navBarLabels = make([]string, 0)

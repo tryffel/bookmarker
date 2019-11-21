@@ -21,7 +21,7 @@ import (
 	"github.com/rivo/tview"
 	"strings"
 	"time"
-	"tryffel.net/pkg/bookmarker/config"
+	"tryffel.net/go/bookmarker/config"
 )
 
 type ImportData struct {

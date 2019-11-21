@@ -1,4 +1,4 @@
-module tryffel.net/pkg/bookmarker
+module tryffel.net/go/bookmarker
 
 go 1.13
 

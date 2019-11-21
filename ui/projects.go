@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
-	"tryffel.net/pkg/bookmarker/config"
-	"tryffel.net/pkg/bookmarker/storage/models"
+	"tryffel.net/go/bookmarker/config"
+	"tryffel.net/go/bookmarker/storage/models"
 )
 
 type Projects struct {
