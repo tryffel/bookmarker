@@ -350,7 +350,7 @@ func (w *Window) createBookmark(bookmark *models.Bookmark) {
 func (w *Window) Search(text string) {
 	var err error
 	w.filter, err = storage.NewFilter(text)
-	if err != nil {
+	if err != nil || w.filter.IsPlainQuery() {
 		logrus.Errorf("Failed to parse query: %v", err)
 		bookmarks, err := w.db.SearchBookmarks(text)
 		if err != nil {
