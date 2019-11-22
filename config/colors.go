@@ -147,20 +147,22 @@ func defaultColorProjects() ColorProjects {
 }
 
 type ColorBookmarkForm struct {
-	Background     tcell.Color
-	Label          tcell.Color
-	Text           tcell.Color
-	TextSelected   tcell.Color
-	TextBackground tcell.Color
+	Background      tcell.Color
+	Label           tcell.Color
+	Text            tcell.Color
+	TextSelected    tcell.Color
+	TextBackground  tcell.Color
+	TextPlaceHolder tcell.Color
 }
 
 func defaultColorBookmarkform() ColorBookmarkForm {
 	return ColorBookmarkForm{
-		Background:     colorBackgroundLight,
-		Label:          tcell.Color252,
-		Text:           tcell.Color187,
-		TextSelected:   tcell.Color23,
-		TextBackground: tcell.Color235,
+		Background:      colorBackgroundLight,
+		Label:           tcell.Color252,
+		Text:            tcell.Color187,
+		TextSelected:    tcell.Color23,
+		TextBackground:  tcell.Color235,
+		TextPlaceHolder: tcell.Color247,
 	}
 }
 

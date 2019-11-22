@@ -29,6 +29,12 @@ type BookmarkForm struct {
 	form     *tview.Form
 	doneFunc func()
 	formFunc func(bookmark *models.Bookmark)
+
+	nameField        *tview.InputField
+	descriptionField *tview.InputField
+	linkField        *tview.InputField
+	projectField     *tview.InputField
+	tagsField        *tview.InputField
 }
 
 func NewBookmarkForm(createFunc func(bookmark *models.Bookmark)) *BookmarkForm {
@@ -49,6 +55,19 @@ func NewBookmarkForm(createFunc func(bookmark *models.Bookmark)) *BookmarkForm {
 	b.form.SetLabelColor(colors.Label)
 	b.form.SetFieldBackgroundColor(colors.TextBackground)
 	b.form.SetFieldTextColor(colors.Text)
+
+	b.nameField = tview.NewInputField().SetLabel("Name").SetPlaceholder("bookmark")
+	b.descriptionField = tview.NewInputField().SetLabel("Description").SetPlaceholder("my bookmark")
+	b.linkField = tview.NewInputField().SetLabel("Link").SetPlaceholder("https://...")
+	b.projectField = tview.NewInputField().SetLabel("Project").SetPlaceholder("bookmarks.a")
+	b.tagsField = tview.NewInputField().SetLabel("Tags").SetPlaceholder("a,b")
+
+	b.nameField.SetPlaceholderTextColor(colors.TextPlaceHolder)
+	b.descriptionField.SetPlaceholderTextColor(colors.TextPlaceHolder)
+	b.linkField.SetPlaceholderTextColor(colors.TextPlaceHolder)
+	b.projectField.SetPlaceholderTextColor(colors.TextPlaceHolder)
+	b.tagsField.SetPlaceholderTextColor(colors.TextPlaceHolder)
+
 	b.initForm()
 
 	return b
@@ -92,18 +111,18 @@ func (n *BookmarkForm) SetVisible(visible bool) {
 func (n *BookmarkForm) create() {
 	bookmark := &models.Bookmark{
 		Id:          0,
-		Name:        n.form.GetFormItemByLabel("Name").(*tview.InputField).GetText(),
+		Name:        n.nameField.GetText(),
 		LowerName:   "",
-		Description: n.form.GetFormItemByLabel("Description").(*tview.InputField).GetText(),
-		Content:     n.form.GetFormItemByLabel("Link").(*tview.InputField).GetText(),
-		Project:     n.form.GetFormItemByLabel("Project").(*tview.InputField).GetText(),
+		Description: n.descriptionField.GetText(),
+		Content:     n.linkField.GetText(),
+		Project:     n.projectField.GetText(),
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
 	}
 
 	bookmark.FillDefaultMetadata()
 	bookmark.LowerName = strings.ToLower(bookmark.Name)
-	tags := n.form.GetFormItemByLabel("Tags").(*tview.InputField).GetText()
+	tags := n.tagsField.GetText()
 	if tags != "" {
 		tags = strings.Replace(tags, " ", "", -1)
 		bookmark.Tags = strings.Split(tags, ",")
@@ -122,16 +141,20 @@ func (n *BookmarkForm) create() {
 
 func (n *BookmarkForm) Clear() {
 	n.form.Clear(true)
+	n.nameField.SetText("")
+	n.descriptionField.SetText("")
+	n.linkField.SetText("")
+	n.projectField.SetText("")
+	n.tagsField.SetText("")
 	n.initForm()
 }
 
 func (n *BookmarkForm) initForm() {
-	n.form.AddInputField("Name", "bookmark", 0, nil, nil)
-	n.form.AddInputField("Description", "short description", 0, nil, nil)
-	n.form.AddInputField("Link", "https://..", 0, nil, nil)
-	n.form.AddInputField("Project", "e.g", 0, nil, nil)
-	n.form.AddInputField("Tags", "", 0, nil, nil)
-
+	n.form.AddFormItem(n.nameField)
+	n.form.AddFormItem(n.descriptionField)
+	n.form.AddFormItem(n.linkField)
+	n.form.AddFormItem(n.projectField)
+	n.form.AddFormItem(n.tagsField)
 	custom := models.DefaulMetadata
 	for _, v := range custom {
 		n.form.AddInputField(v, "", 0, nil, nil)

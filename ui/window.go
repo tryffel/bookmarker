@@ -326,7 +326,7 @@ func (w *Window) openMetadata() {
 }
 
 func (w *Window) createBookmark(bookmark *models.Bookmark) {
-	logrus.Info("Got new bookmark: ", bookmark)
+	logrus.Debugf("Create new bookmark: ", bookmark)
 
 	err := w.db.NewBookmark(bookmark)
 	if err != nil {
