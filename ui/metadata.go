@@ -130,6 +130,8 @@ func NewMetadata(doneFunc func(save bool, bookmark *models.Bookmark) bool) *Meta
 	m.defaultFields[metadataTags].SetFieldWidth(width).SetAcceptanceFunc(m.editEnabled)
 	m.defaultFields[metadataCreatedAt].SetFieldWidth(width).SetAcceptanceFunc(m.editEnabled)
 	m.defaultFields[metadataUpdatedAt].SetFieldWidth(width).SetAcceptanceFunc(m.editEnabled)
+
+	m.initDefaults()
 	return m
 }
 
