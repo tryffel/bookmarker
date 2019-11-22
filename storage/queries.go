@@ -40,6 +40,7 @@ type query struct {
 	name  string
 }
 
+//Create new logger instance
 func beginQuery(Query string, name string) *query {
 	q := &query{
 		start: time.Now(),
@@ -79,14 +80,14 @@ GROUP BY b.id
 ORDER BY b.name ASC
 LIMIT 500;
 `
-
+	logger := beginQuery(query, "get all bookmarks")
 	rows, err := d.conn.Query(query)
 	if err != nil {
+		logger.log(err)
 		return nil, err
 	}
 
 	bookmarks := make([]*models.Bookmark, 0)
-
 	for rows.Next() {
 		var b models.Bookmark
 		var tags sql.NullString
@@ -100,7 +101,7 @@ LIMIT 500;
 		}
 		bookmarks = append(bookmarks, &b)
 	}
-
+	logger.log(nil)
 	return bookmarks, nil
 }
 
@@ -127,8 +128,11 @@ FROM bookmarks `
 
 	query += " GROUP BY project ORDER BY project ASC;"
 
+	logger := beginQuery(query, "get projects")
+
 	rows, err := d.conn.Query(query, name)
 	if err != nil {
+		logger.log(err)
 		return nil, err
 	}
 
@@ -148,6 +152,7 @@ FROM bookmarks `
 	}
 
 	projects := models.ParseTrees(strings, counts)
+	logger.log(err)
 	return projects, nil
 }
 
@@ -161,8 +166,11 @@ LEFT JOIN bookmark_tags bt ON tags.id = bt.tag
 GROUP BY tags.name
 ORDER BY tags.name ASC;
 `
+	logger := beginQuery(query, "get tags")
+
 	rows, err := d.conn.Query(query)
 	if err != nil {
+		logger.log(err)
 		return nil, nil
 	}
 
@@ -180,6 +188,7 @@ ORDER BY tags.name ASC;
 			(*results)[tag.String] = count
 		}
 	}
+	logger.log(nil)
 	return results, nil
 }
 
@@ -189,18 +198,21 @@ INSERT INTO
 bookmarks (name, lower_name, description, content, project, created_at, updated_at) 
 VALUES (?,?,?,?,?,?,?); SELECT last_insert_rowid() FROM bookmarks`
 
+	logger := beginQuery(query, "new bookmark")
 	res, err := d.conn.Exec(query, b.Name, b.LowerName, b.Description, b.Content, strings.ToLower(b.Project),
 		b.CreatedAt, b.UpdatedAt)
 
 	if err != nil {
+		logger.log(err)
 		return err
 	}
 
 	id, err := res.LastInsertId()
 	if err != nil {
-		logrus.Error(err)
+		logger.log(err)
 		return err
 	}
+	logger.log(nil)
 	b.Id = int(id)
 	err = d.upsertMetadata(b)
 	if err != nil {
@@ -511,6 +523,8 @@ value = ?, value_lower = ?
 WHERE bookmark = ?
 `
 
+	logger := beginQuery(query, "update/insert bookmark metadata")
+
 	for key, value := range *b.Metadata {
 		keyLower := strings.ToLower(key)
 		valueLower := strings.ToLower(value)
@@ -520,6 +534,7 @@ WHERE bookmark = ?
 			logrus.Errorf("Failed to insert/update metadata: %v", err)
 		}
 	}
+	logger.log(nil)
 	return nil
 }
 
@@ -553,8 +568,10 @@ GROUP BY b.id
 ORDER BY b.name ASC
 LIMIT 100;
 `
+	logger := beginQuery(query, "get project bookmarks")
 	rows, err := d.conn.Query(query, project)
 	if err != nil {
+		logger.log(err)
 		return nil, err
 	}
 
@@ -572,6 +589,7 @@ LIMIT 100;
 		}
 		bookmarks = append(bookmarks, &b)
 	}
+	logger.log(nil)
 	return bookmarks, nil
 }
 
