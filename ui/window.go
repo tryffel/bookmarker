@@ -121,6 +121,8 @@ func (w *Window) inputCapture(event *tcell.EventKey) *tcell.EventKey {
 		}
 	case navbar.Menu:
 		w.addModal(w.menu, twidgets.ModalSizeMedium)
+	case navbar.Quit:
+		w.quit()
 	case tcell.KeyEscape:
 		if w.hasModal {
 			w.layout.RemoveModal(w.modal)
@@ -496,4 +498,8 @@ func (w *Window) Run() error {
 	w.project.SetData(projects)
 
 	return w.app.Run()
+}
+
+func (w *Window) quit() {
+	w.app.Stop()
 }
