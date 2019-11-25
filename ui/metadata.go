@@ -19,9 +19,11 @@ package ui
 import (
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
+	"github.com/sirupsen/logrus"
 	"strings"
 	"time"
 	"tryffel.net/go/bookmarker/config"
+	"tryffel.net/go/bookmarker/external"
 	"tryffel.net/go/bookmarker/storage/models"
 )
 
@@ -169,6 +171,7 @@ func (m *Metadata) toggleEdit() {
 
 		m.form.AddButton("Save", m.save)
 		m.form.AddButton("Cancel", m.cancel)
+		m.form.AddButton("Get title", m.getTitle)
 	}
 }
 
@@ -217,6 +220,7 @@ func (m *Metadata) save() {
 		Project:      m.defaultFields[metadataProject].GetText(),
 		CreatedAt:    m.bookmark.CreatedAt,
 		UpdatedAt:    time.Now(),
+		Archived:     m.archived.IsChecked(),
 		Tags:         nil,
 		Metadata:     m.bookmark.Metadata,
 		MetadataKeys: m.bookmark.MetadataKeys,
@@ -248,4 +252,17 @@ func (m *Metadata) save() {
 func (m *Metadata) exitEdit() {
 	m.enableEdit = false
 	m.form.SetFieldBackgroundColor(config.Configuration.Colors.Metadata.TextBackground)
+}
+
+func (m *Metadata) getTitle() {
+	url := m.defaultFields["Link"].GetText()
+	if url == "" {
+		return
+	}
+	metadata, err := external.GetPageMetadata(url)
+	if err != nil {
+		logrus.Errorf("get site title: %v", err)
+	} else {
+		(*m.customFields)["Title"].SetText(metadata.Title)
+	}
 }

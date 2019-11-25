@@ -19,9 +19,11 @@ package modals
 import (
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
+	"github.com/sirupsen/logrus"
 	"strings"
 	"time"
 	"tryffel.net/go/bookmarker/config"
+	"tryffel.net/go/bookmarker/external"
 	"tryffel.net/go/bookmarker/storage/models"
 )
 
@@ -162,4 +164,17 @@ func (n *BookmarkForm) initForm() {
 
 	n.form.AddButton("Create", n.create)
 	n.form.AddButton("Cancel", n.doneFunc)
+	n.form.AddButton("Get title", n.getTitle)
+}
+
+func (n *BookmarkForm) getTitle() {
+	if n.linkField.GetText() == "" {
+		return
+	}
+	metadata, err := external.GetPageMetadata(n.linkField.GetText())
+	if err != nil {
+		logrus.Errorf("get site title: %v", err)
+	} else {
+		n.form.GetFormItemByLabel("Title").(*tview.InputField).SetText(metadata.Title)
+	}
 }
