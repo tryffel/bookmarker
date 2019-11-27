@@ -40,6 +40,8 @@ const (
 var metadataDefaults = []string{metadataName, metadataDescription, metadataLink, metadataProject, metadataTags,
 	metadataCreatedAt, metadataUpdatedAt}
 
+var CustomMetadataFields = make([]string, 0)
+
 //Metadata provides a form-like view to bookmark metadata
 type Metadata struct {
 	form *tview.Form
@@ -136,6 +138,15 @@ func NewMetadata(doneFunc func(save bool, bookmark *models.Bookmark) bool) *Meta
 	m.defaultFields[metadataUpdatedAt].SetFieldWidth(width).SetAcceptanceFunc(m.editEnabled)
 	m.archived.SetLabel("Archived")
 
+	m.customKeys = &[]string{}
+	m.customFields = &map[string]*tview.InputField{}
+	for i := 0; i < len(CustomMetadataFields); i++ {
+		key := CustomMetadataFields[i]
+		(*m.customFields)[key] = tview.NewInputField().SetFieldWidth(width).SetAcceptanceFunc(m.editEnabled)
+		m.form.AddFormItem((*m.customFields)[key])
+		*m.customKeys = append(*m.customKeys, key)
+	}
+
 	m.initDefaults()
 	return m
 }
@@ -144,8 +155,8 @@ func (m *Metadata) setData(bookmark *models.Bookmark) {
 	bookmark.FillDefaultMetadata()
 	m.bookmark = bookmark
 	m.form.Clear(true)
-	m.customFields = &map[string]*tview.InputField{}
-	m.customKeys = bookmark.MetadataKeys
+	//m.customFields = &map[string]*tview.InputField{}
+	//m.customKeys = bookmark.MetadataKeys
 	m.initDefaults()
 	m.setFields(m.bookmark)
 	m.initCustomFields()
@@ -196,10 +207,19 @@ func (m *Metadata) initCustomFields() {
 	}
 
 	for _, key := range *m.bookmark.MetadataKeys {
-
 		(*m.customFields)[key] = tview.NewInputField().SetLabel(key).SetText((*m.bookmark.Metadata)[key]).
 			SetAcceptanceFunc(m.editEnabled)
 		m.form.AddFormItem((*m.customFields)[key])
+	}
+
+	for i := 0; i < len(CustomMetadataFields); i++ {
+		key := CustomMetadataFields[i]
+
+		exists := (*m.customFields)[key]
+		if exists == nil {
+			(*m.customFields)[key] = tview.NewInputField().SetAcceptanceFunc(m.editEnabled).SetLabel(key)
+			m.form.AddFormItem((*m.customFields)[key])
+		}
 	}
 }
 
@@ -239,8 +259,10 @@ func (m *Metadata) save() {
 	}
 
 	for _, key := range *m.customKeys {
-		value := (*m.customFields)[key].GetText()
-		(*m.tmpBookmark.Metadata)[key] = value
+		item, ok := (*m.customFields)[key]
+		if ok {
+			(*m.tmpBookmark.Metadata)[key] = item.GetText()
+		}
 	}
 
 	ok := m.doneFunc(true, m.tmpBookmark)
@@ -260,6 +282,7 @@ func (m *Metadata) exitEdit() {
 }
 
 func (m *Metadata) getTitle() {
+	//TODO: run in background
 	url := m.defaultFields["Link"].GetText()
 	if url == "" {
 		return

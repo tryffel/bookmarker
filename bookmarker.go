@@ -28,6 +28,7 @@ import (
 	"tryffel.net/go/bookmarker/config"
 	"tryffel.net/go/bookmarker/storage"
 	"tryffel.net/go/bookmarker/storage/migrations"
+	"tryffel.net/go/bookmarker/storage/models"
 	"tryffel.net/go/bookmarker/ui"
 )
 
@@ -81,6 +82,10 @@ func main() {
 		logrus.Errorf("database connection failed: %v", err)
 		os.Exit(1)
 	}
+
+	// Register user defined metadata
+	models.DefaulMetadata = append(models.DefaulMetadata, conf.DefaultMetadata...)
+	ui.CustomMetadataFields = conf.DefaultMetadata
 
 	err = migrations.Migrate(db.Engine(), migrations.BookmarkerMigrations)
 	if err != nil {
