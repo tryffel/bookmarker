@@ -26,6 +26,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"strings"
 	"time"
+	"tryffel.net/go/bookmarker/config"
 	"tryffel.net/go/bookmarker/storage/models"
 )
 
@@ -76,10 +77,18 @@ SELECT
 FROM bookmarks b
 LEFT JOIN bookmark_tags bt ON b.id = bt.bookmark
 LEFT JOIN tags t ON bt.tag = t.id
+`
+	queryEnd := `
+	
 GROUP BY b.id
 ORDER BY b.name ASC
 LIMIT 500;
 `
+	if config.Configuration.HideArchived {
+		query += " WHERE archived = false"
+	}
+	query += queryEnd
+
 	logger := beginQuery(query, "get all bookmarks")
 	rows, err := d.conn.Query(query)
 	if err != nil {
@@ -195,12 +204,12 @@ ORDER BY tags.name ASC;
 func (d *Database) NewBookmark(b *models.Bookmark) error {
 	query := `
 INSERT INTO 
-bookmarks (name, lower_name, description, content, project, created_at, updated_at) 
-VALUES (?,?,?,?,?,?,?); SELECT last_insert_rowid() FROM bookmarks`
+bookmarks (name, lower_name, description, content, project, created_at, updated_at, archived) 
+VALUES (?,?,?,?,?,?,?,?); SELECT last_insert_rowid() FROM bookmarks`
 
 	logger := beginQuery(query, "new bookmark")
 	res, err := d.conn.Exec(query, b.Name, b.LowerName, b.Description, b.Content, strings.ToLower(b.Project),
-		b.CreatedAt, b.UpdatedAt)
+		b.CreatedAt, b.UpdatedAt, b.Archived)
 
 	if err != nil {
 		logger.log(err)
@@ -421,6 +430,7 @@ SELECT * FROM
     	b.project AS project,
     	b.created_at AS created_at,
     	b.updated_at AS updated_at,
+    	b.archived AS archived,
        	-- skip tags for now
     	'' as tags
 	FROM bookmarks b
@@ -436,6 +446,7 @@ SELECT * FROM
 		b.project AS project,
 		b.created_at AS created_at,
 		b.updated_at AS updated_at,
+		b.archived AS archived,
 		GROUP_CONCAT(t.name) AS tags
 	FROM bookmarks b
 		LEFT JOIN bookmark_tags bt ON b.id = bt.bookmark
@@ -462,7 +473,7 @@ LIMIT 300;
 		var tag sql.NullString
 		b := models.Bookmark{}
 
-		err := rows.Scan(&b.Id, &b.Name, &b.Description, &b.Content, &b.Project, &b.CreatedAt, &b.UpdatedAt, &tag)
+		err := rows.Scan(&b.Id, &b.Name, &b.Description, &b.Content, &b.Project, &b.CreatedAt, &b.UpdatedAt, &b.Archived, &tag)
 		if err != nil {
 			logrus.Errorf("scan bookmark rows: %v", err)
 		}
@@ -483,10 +494,11 @@ UPDATE bookmarks SEt
 		lower_name = ?,
 		content = ?,
 		project = ?,
-		updated_at = ?
+		updated_at = ?,
+		archived = ?
 WHERE id = ?;
 `
-	_, err := d.conn.Exec(query, b.Name, b.LowerName, b.Content, strings.ToLower(b.Project), b.UpdatedAt, b.Id)
+	_, err := d.conn.Exec(query, b.Name, b.LowerName, b.Content, strings.ToLower(b.Project), b.UpdatedAt, b.Archived, b.Id)
 
 	if err != nil {
 		return err
@@ -671,6 +683,7 @@ func (d *Database) GetStatistics() (*Statistics, error) {
 	query := `
 	SELECT
 		COUNT(DISTINCT(b.id)) AS bookmarks,
+		(SELECT id FROM bookmarks WHERE archived=true) AS archived,
 		COUNT(DISTINCT(t.id)) AS tags,
 		COUNT(DISTINCT(b.project)) AS projects
 	FROM bookmarks b,
@@ -683,7 +696,7 @@ func (d *Database) GetStatistics() (*Statistics, error) {
 	}
 
 	rows.Next()
-	err = rows.Scan(&s.Bookmarks, &s.Tags, &s.Projects)
+	err = rows.Scan(&s.Bookmarks, &s.Archived, &s.Tags, &s.Projects)
 	if err != nil {
 		return s, err
 	}
@@ -704,119 +717,8 @@ LIMIT 1
 	return s, err
 }
 
-//Construct query from filter. Return values: query, parameters, error
-func (d *Database) constructFilter(filter *Filter) (string, *[]interface{}, error) {
-	params := &[]interface{}{}
-	queryMetadata := `
-SELECT * FROM
-(
-	SELECT
-	b.id AS id,
-	b.name AS name,
-	b.description AS description,
-	b.content AS content,
-	b.project AS project,
-	b.created_at AS created_at,
-	b.updated_at AS updated_at,
-	-- skip tags for now
-	'' as tags
-FROM bookmarks b
-LEFT outer JOIN metadata m on b.id = m.bookmark
-WHERE `
-
-	queryBookmark := `
-SELECT
-	b.id as id,
-	b.name AS name,
-	b.description AS description,
-	b.content as content,
-	b.project AS project,
-	b.created_at AS created_at,
-	b.updated_at AS updated_at,
-GROUP_CONCAT(t.name) AS tags
-FROM bookmarks b
-LEFT JOIN bookmark_tags bt ON b.id = bt.bookmark
-LEFT JOIN tags t ON bt.tag = t.id
-	WHERE `
-
-	queryEnd := `
-GROUP BY b.id
-ORDER BY b.name ASC
-LIMIT 300;`
-
-	queryEndMetadata := ` ) AS a
-GROUP BY a.id
-ORDER BY a.name ASC
-LIMIT 300;`
-
-	query := ""
-
-	metadata := false
-	if len(filter.CustomTags) > 0 {
-		metadata = true
-		query = queryMetadata
-	}
-	i := 0
-	for key, filt := range filter.CustomTags {
-		if i > 0 {
-			query += " AND "
-		}
-
-		query += "(m.key_lower = ? AND "
-		*params = append(*params, strings.ToLower(key))
-		if filt.Strict {
-			query += "m.value_lower = ?) "
-			*params = append(*params, strings.ToLower(filt.Name))
-		} else {
-			query += "m.value_lower LIKE ?) "
-			*params = append(*params, "%"+strings.ToLower(filt.Name)+"%")
-		}
-		i += 1
-	}
-	if !filter.CustomOnly() {
-		if metadata {
-			query += "UNION"
-		}
-
-		query += queryBookmark
-
-		data := map[string]StringFilter{
-			"b.lower_name":  filter.Name,
-			"b.description": filter.Description,
-			"b.content":     filter.Content,
-			"b.project":     filter.Project,
-			//"b.tags": 		 filter.Tags,
-		}
-
-		i = 0
-		for key, filt := range data {
-			if filt.Name != "" {
-				if i > 0 {
-					query += " AND "
-				}
-				query += "(" + key
-				if filt.Strict {
-					query += " = ?)"
-					*params = append(*params, strings.ToLower(filt.Name))
-				} else {
-					query += " LIKE ?)"
-					*params = append(*params, "%"+strings.ToLower(filt.Name)+"%")
-				}
-				i += 1
-			}
-		}
-	}
-
-	if metadata {
-		query += queryEndMetadata
-	} else if !filter.CustomOnly() {
-		query += queryEnd
-	}
-	return query, params, nil
-}
-
 func (d *Database) SearchBookmarksFilter(filter *Filter) ([]*models.Bookmark, error) {
-	query, params, err := d.constructFilter(filter)
+	query, params, err := filter.bookmarksQuery()
 	if err != nil {
 		return nil, err
 	}
@@ -834,7 +736,7 @@ func (d *Database) SearchBookmarksFilter(filter *Filter) ([]*models.Bookmark, er
 		var tag sql.NullString
 		b := models.Bookmark{}
 
-		err := rows.Scan(&b.Id, &b.Name, &b.Description, &b.Content, &b.Project, &b.CreatedAt, &b.UpdatedAt, &tag)
+		err := rows.Scan(&b.Id, &b.Name, &b.Description, &b.Content, &b.Project, &b.CreatedAt, &b.UpdatedAt, &b.Archived, &tag)
 		if err != nil {
 			logrus.Errorf("scan bookmark rows: %v", err)
 		}
@@ -847,4 +749,20 @@ func (d *Database) SearchBookmarksFilter(filter *Filter) ([]*models.Bookmark, er
 	}
 	logger.log(err)
 	return bookmarks, nil
+}
+
+//Bulk modify modifies multple bookmarks defined with filter to state defined in modifier
+func (d *Database) BulkModify(filter *Filter, modifier *Modifier) (int, error) {
+	query, params, err := filter.bulkUpdateQuery(modifier)
+	if err != nil {
+		return 0, err
+	}
+
+	res, err := d.conn.Exec(query, *params...)
+	if err != nil {
+		return 0, err
+	}
+
+	count, err := res.RowsAffected()
+	return int(count), err
 }

@@ -41,6 +41,7 @@ type Bookmark struct {
 	Project     string
 	CreatedAt   time.Time `db:"created_at"`
 	UpdatedAt   time.Time `db:"updated_at"`
+	Archived    bool
 
 	Tags []string
 	//Metadata key-values. Not in order

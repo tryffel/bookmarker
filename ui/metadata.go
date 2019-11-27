@@ -56,6 +56,7 @@ type Metadata struct {
 
 	customFields *map[string]*tview.InputField
 	customKeys   *[]string
+	archived     *tview.Checkbox
 
 	doneFunc func(save bool, bookmark *models.Bookmark) bool
 }
@@ -104,6 +105,7 @@ func NewMetadata(doneFunc func(save bool, bookmark *models.Bookmark) bool) *Meta
 		enableEdit:    false,
 		doneFunc:      doneFunc,
 		defaultFields: map[string]*tview.InputField{},
+		archived:      tview.NewCheckbox(),
 	}
 
 	colors := config.Configuration.Colors.Metadata
@@ -132,6 +134,7 @@ func NewMetadata(doneFunc func(save bool, bookmark *models.Bookmark) bool) *Meta
 	m.defaultFields[metadataTags].SetFieldWidth(width).SetAcceptanceFunc(m.editEnabled)
 	m.defaultFields[metadataCreatedAt].SetFieldWidth(width).SetAcceptanceFunc(m.editEnabled)
 	m.defaultFields[metadataUpdatedAt].SetFieldWidth(width).SetAcceptanceFunc(m.editEnabled)
+	m.archived.SetLabel("Archived")
 
 	m.initDefaults()
 	return m
@@ -157,6 +160,7 @@ func (m *Metadata) setFields(bookmark *models.Bookmark) {
 	m.defaultFields[metadataTags].SetText(bookmark.TagsString(true))
 	m.defaultFields[metadataCreatedAt].SetText(bookmark.CreatedAt.Format("2006-01-02 15:04"))
 	m.defaultFields[metadataUpdatedAt].SetText(bookmark.UpdatedAt.Format("2006-01-02 15:04"))
+	m.archived.SetChecked(bookmark.Archived)
 }
 
 func (m *Metadata) toggleEdit() {
@@ -179,6 +183,7 @@ func (m *Metadata) initDefaults() {
 	for _, field := range m.defaultFieldsArray {
 		m.form.AddFormItem(field)
 	}
+	m.form.AddFormItem(m.archived)
 }
 
 func (m *Metadata) initButtons() {

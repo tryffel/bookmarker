@@ -96,8 +96,8 @@ func (h *Help) Update(stats *storage.Statistics) {
 	runtime.ReadMemStats(&runStats)
 
 	timeFormat := "2006-01-02 15:04:05"
-	text += fmt.Sprintf("Statistics:\nBookmarks: %d\nTags: %d\nProjects: %d\nLast Bookmark: %s\n",
-		stats.Bookmarks, stats.Tags, stats.Projects, stats.LastBookmark.Format(timeFormat))
+	text += fmt.Sprintf("Statistics:\nBookmarks: %d\nARchived: %d\nTags: %d\nProjects: %d\nLast Bookmark: %s\n",
+		stats.Bookmarks, stats.Archived, stats.Tags, stats.Projects, stats.LastBookmark.Format(timeFormat))
 
 	text += fmt.Sprintf("Memory: %s\n", formatBytes(runStats.Alloc))
 	h.SetText(text)

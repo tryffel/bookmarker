@@ -14,15 +14,9 @@
  *   limitations under the License.
  */
 
-package storage
+package migrations
 
-import "time"
-
-type Statistics struct {
-	Bookmarks    int
-	Archived     int
-	Tags         int
-	Projects     int
-	IpfsLinks    int
-	LastBookmark time.Time
-}
+const v3 = `
+ALTER TABLE bookmarks
+ADD COLUMN archived BOOL NOT NULL DEFAULT FALSE;
+`

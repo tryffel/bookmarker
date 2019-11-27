@@ -37,6 +37,11 @@ var BookmarkerMigrations = []Migrator{
 		Level:  2,
 		Schema: v2,
 	},
+	&Migration{
+		Name:   "add archived column to bookmark",
+		Level:  3,
+		Schema: v3,
+	},
 }
 
 type Schema struct {
