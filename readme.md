@@ -17,3 +17,10 @@ go get -u tryffel.net/go/bookmarker
 GOPATH/bin/bookmarker
 ```
 
+Config file can be set with ```--config``` flag. This will create new file and directories, if they don't exist. 
+Usage:
+```
+./bookmarker --config /my/dir/config.toml
+```
+
+After this, all data will be at directory /my/dir by default. This can be customised in config file.

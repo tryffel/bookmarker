@@ -20,6 +20,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"github.com/sirupsen/logrus"
 	prefixed "github.com/x-cray/logrus-prefixed-formatter"
@@ -33,7 +34,13 @@ import (
 )
 
 func main() {
-	conf, err := config.ReadConfigFile()
+	confFile := flag.String("config", "", "Configuration file location. "+
+		"The same directory will be used"+
+		"for data also. This can be configured from config file.")
+
+	flag.Parse()
+
+	conf, err := config.ReadConfigFile(*confFile)
 	if err != nil {
 		logrus.Error(err)
 		os.Exit(1)

@@ -30,7 +30,57 @@ var configFile = AppNameLower + ".toml"
 var logFile = AppNameLower + ".log"
 var dbFile = AppNameLower + ".sqlite"
 
-func ReadConfigFile() (*ApplicationConfig, error) {
+//ReadConfigFile reads config file from given file. If file is empty, use default location provided by os
+func ReadConfigFile(file string) (*ApplicationConfig, error) {
+	if file == "" {
+		return readDefaultConfig()
+	}
+
+	conf := defaultConfig()
+	err := EnsureConfigDirExists()
+	if err != nil {
+		return nil, err
+	}
+	Configuration = conf
+
+	// Error caught in previous call
+	//dir, _ := GetConfigDirectory()
+	//dir = path.Join(dir, AppNameLower)
+
+	dir := path.Dir(file)
+
+	conf.configDir = dir
+	conf.configFile = file
+	conf.Log = path.Join(dir, logFile)
+	conf.DataBase = path.Join(dir, dbFile)
+
+	err = EnsureFileExists(conf.configFile)
+	if err != nil {
+		return nil, err
+	}
+	err = EnsureFileExists(conf.Log)
+	if err != nil {
+		return nil, err
+	}
+	err = EnsureFileExists(conf.DataBase)
+	if err != nil {
+		return nil, err
+	}
+
+	f, err := os.Open(conf.configFile)
+
+	_, err = toml.DecodeReader(f, &conf)
+	if err != nil {
+		return conf, fmt.Errorf("failed to read config file: %v", err)
+	}
+
+	conf.Log = path.Join(dir, logFile)
+	conf.DataBase = path.Join(dir, dbFile)
+
+	return conf, nil
+}
+
+func readDefaultConfig() (*ApplicationConfig, error) {
 	conf := defaultConfig()
 	err := EnsureConfigDirExists()
 	if err != nil {
@@ -45,18 +95,10 @@ func ReadConfigFile() (*ApplicationConfig, error) {
 
 	conf.configDir = dir
 	conf.configFile = path.Join(dir, configFile)
-	conf.logFile = path.Join(dir, logFile)
-	conf.dbFile = path.Join(dir, dbFile)
+	conf.Log = path.Join(dir, logFile)
+	conf.DataBase = path.Join(dir, dbFile)
 
 	err = EnsureFileExists(conf.configFile)
-	if err != nil {
-		return nil, err
-	}
-	err = EnsureFileExists(conf.logFile)
-	if err != nil {
-		return nil, err
-	}
-	err = EnsureFileExists(conf.dbFile)
 	if err != nil {
 		return nil, err
 	}
@@ -68,10 +110,20 @@ func ReadConfigFile() (*ApplicationConfig, error) {
 		return conf, fmt.Errorf("failed to read config file: %v", err)
 	}
 
-	conf.logFile = path.Join(dir, logFile)
-	conf.dbFile = path.Join(dir, dbFile)
+	err = EnsureFileExists(conf.Log)
+	if err != nil {
+		return nil, err
+	}
+	err = EnsureFileExists(conf.DataBase)
+	if err != nil {
+		return nil, err
+	}
+
+	//conf.Log = path.Join(dir, logFile)
+	//conf.DataBase = path.Join(dir, dbFile)
 
 	return conf, nil
+
 }
 
 func SaveConfig(conf *ApplicationConfig) error {

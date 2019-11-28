@@ -27,10 +27,10 @@ type ApplicationConfig struct {
 	LogLevel        string   `toml:"log_level"`
 	HideArchived    bool     `toml:"default_hide_archived"`
 	DefaultMetadata []string `toml:"default_metadata_fields"`
+	DataBase        string   `toml:"database_file"`
+	Log             string   `toml:"log_file"`
 	Colors          Colors
 	Shortcuts       Shortcuts
-	dbFile          string
-	logFile         string
 	configDir       string
 	configFile      string
 }
@@ -42,11 +42,11 @@ func (a *ApplicationConfig) ParseLogLevel() (logrus.Level, error) {
 }
 
 func (a *ApplicationConfig) DbFile() string {
-	return a.dbFile
+	return a.DataBase
 }
 
 func (a *ApplicationConfig) Logfile() string {
-	return a.logFile
+	return a.Log
 }
 
 //Default configuration which config file overwrites
