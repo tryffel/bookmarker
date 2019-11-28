@@ -291,8 +291,8 @@ func (w *Window) closeMetadata(save bool, bookmark *models.Bookmark) bool {
 func (w *Window) initDefaultLayout() {
 	w.layout.Grid().Clear()
 
-	w.layout.Grid().AddItem(w.project, 0, 0, 5, 1, 5, 5, false)
-	w.layout.Grid().AddItem(w.tags, 5, 0, 5, 1, 5, 5, false)
+	w.layout.Grid().AddItem(w.project, 0, 0, 7, 1, 5, 5, false)
+	w.layout.Grid().AddItem(w.tags, 7, 0, 3, 1, 5, 5, false)
 	w.layout.Grid().AddItem(w.bookmarks, 0, 1, 9, 9, 10, 10, true)
 	w.layout.Grid().AddItem(w.search, 9, 1, 1, 9, 1, 10, false)
 }
