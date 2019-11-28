@@ -113,11 +113,12 @@ func (w *Window) inputCapture(event *tcell.EventKey) *tcell.EventKey {
 		w.addModal(w.bookmarkForm, twidgets.ModalSizeMedium)
 	case navbar.OpenBrowser:
 		index, _ := w.bookmarks.table.GetSelection()
-		bookmark := w.bookmarks.items[index-1]
-
-		err := external.OpenUrlInBrowser(bookmark.Content)
-		if err != nil {
-			logrus.Errorf("Open link in browser: %v", err)
+		if len(w.bookmarks.items) > index {
+			bookmark := w.bookmarks.items[index-1]
+			err := external.OpenUrlInBrowser(bookmark.Content)
+			if err != nil {
+				logrus.Errorf("Open link in browser: %v", err)
+			}
 		}
 	case navbar.Menu:
 		w.addModal(w.menu, twidgets.ModalSizeMedium)
@@ -304,6 +305,11 @@ func (w *Window) openBookmark(b *models.Bookmark) {
 
 func (w *Window) openMetadata() {
 	w.lastFocus = w.app.GetFocus()
+	index, _ := w.bookmarks.table.GetSelection()
+	if len(w.bookmarks.items) < index {
+		return
+	}
+	bookmark := w.bookmarks.items[index-1]
 
 	//w.grid.Blur()
 	//w.metadata.Focus(func(p tview.Primitive){})
@@ -315,9 +321,6 @@ func (w *Window) openMetadata() {
 	w.layout.Grid().AddItem(w.bookmarks, 0, 0, 9, 7, 10, 10, false)
 	w.layout.Grid().AddItem(w.search, 9, 0, 1, 7, 1, 10, false)
 	w.layout.Grid().AddItem(w.metadata, 0, 7, 10, 3, 10, 10, true)
-
-	index, _ := w.bookmarks.table.GetSelection()
-	bookmark := w.bookmarks.items[index-1]
 
 	w.app.QueueUpdateDraw(func() {
 		err := w.db.GetBookmarkMetadata(bookmark)
