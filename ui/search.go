@@ -58,9 +58,6 @@ func (s *Search) Done(key tcell.Key) {
 	}
 
 	text := s.GetText()
-	if text == "" {
-		return
-	}
 
 	s.search(text)
 }
