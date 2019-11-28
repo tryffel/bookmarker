@@ -114,6 +114,12 @@ CREATE TABLE "schemas" (
 	}
 
 	lastLevel := current.Level
+
+	if lastLevel > len(migrations) {
+		return fmt.Errorf("schema level newer than supported by this version: got %d, expected %d",
+			lastLevel, migrations[len(migrations)-1].MLevel())
+	}
+
 	for _, v := range migrations[current.Level:] {
 		logrus.Warningf("Migrating database schema %d -> %d", lastLevel, v.MLevel())
 		err := migrateSingle(db, v)
