@@ -24,15 +24,17 @@ import (
 )
 
 type ApplicationConfig struct {
-	LogLevel        string   `toml:"log_level"`
-	HideArchived    bool     `toml:"default_hide_archived"`
-	DefaultMetadata []string `toml:"default_metadata_fields"`
-	DataBase        string   `toml:"database_file"`
-	Log             string   `toml:"log_file"`
-	Colors          Colors
-	Shortcuts       Shortcuts
-	configDir       string
-	configFile      string
+	LogLevel               string   `toml:"log_level"`
+	HideArchived           bool     `toml:"default_hide_archived"`
+	DefaultMetadata        []string `toml:"default_metadata_fields"`
+	DataBase               string   `toml:"database_file"`
+	Log                    string   `toml:"log_file"`
+	AutoComplete           bool     `toml:"autocomplete"`
+	AutoCompleteMaxResults int      `toml:"autocomplete_max_results"`
+	Colors                 Colors
+	Shortcuts              Shortcuts
+	configDir              string
+	configFile             string
 }
 
 var Configuration *ApplicationConfig = &ApplicationConfig{}
@@ -52,11 +54,13 @@ func (a *ApplicationConfig) Logfile() string {
 //Default configuration which config file overwrites
 func defaultConfig() *ApplicationConfig {
 	conf := &ApplicationConfig{
-		LogLevel:        "debug",
-		HideArchived:    true,
-		DefaultMetadata: []string{"language"},
-		Colors:          defaultColors(),
-		Shortcuts:       defaultShortcuts(),
+		LogLevel:               "debug",
+		HideArchived:           true,
+		DefaultMetadata:        []string{"language"},
+		AutoComplete:           true,
+		AutoCompleteMaxResults: 20,
+		Colors:                 defaultColors(),
+		Shortcuts:              defaultShortcuts(),
 	}
 	return conf
 }

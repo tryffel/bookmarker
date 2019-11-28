@@ -755,6 +755,7 @@ func (d *Database) SearchBookmarksFilter(filter *Filter) ([]*models.Bookmark, er
 func (d *Database) SearchKeyValue(key, value string) ([]string, error) {
 	key = strings.ToLower(key)
 	value = "%" + strings.ToLower(value) + "%"
+	limit := config.Configuration.AutoCompleteMaxResults
 
 	query := `
 SELECT value_lower
@@ -763,7 +764,7 @@ WHERE key_lower = ?
 AND value_lower LIKE ?
 GROUP BY value_lower 
 ORDER BY value_lower ASC
-LIMIT 10;`
+LIMIT ?;`
 
 	//TODO: user filter for queries
 	if key == "project" {
@@ -773,7 +774,7 @@ FROM bookmarks
 WHERE project LIKE ? 
 GROUP BY project
 ORDER BY project ASC
-LIMIT 10;`
+LIMIT ?;`
 	}
 
 	logger := beginQuery(query, "search metadata")
@@ -783,9 +784,9 @@ LIMIT 10;`
 	var err error
 
 	if key == "project" {
-		rows, err = d.conn.Query(query, value)
+		rows, err = d.conn.Query(query, value, limit)
 	} else {
-		rows, err = d.conn.Query(query, key, value)
+		rows, err = d.conn.Query(query, key, value, limit)
 	}
 	if err != nil {
 		logger.log(err)

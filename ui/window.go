@@ -224,6 +224,7 @@ func NewWindow(colors config.Colors, shortcuts *config.Shortcuts, db *storage.Da
 	w.menu = modals.NewMenu()
 	w.menu.SetActionFunc(w.menuAction)
 	w.importForm.SetCreateFunc(w.doImport)
+	w.modify = modals.NewModify(w.modifyBookmark)
 
 	w.gridSize = 6
 	w.grid.SetRows(1, -1)
@@ -412,6 +413,10 @@ func (w *Window) menuAction(action modals.MenuAction) {
 		w.layout.RemoveModal(w.modal)
 		w.hasModal = false
 		w.addModal(w.importForm, twidgets.ModalSizeMedium)
+	case modals.MenuActionModify:
+		w.layout.RemoveModal(w.modal)
+		w.hasModal = false
+		w.addModal(w.modify, twidgets.ModalSizeMedium)
 	}
 }
 
@@ -506,6 +511,15 @@ func (w *Window) quit() {
 	w.app.Stop()
 }
 
+func (w *Window) modifyBookmark(filter *storage.Filter, modifier *storage.Modifier) (int, error) {
+	return w.db.BulkModify(filter, modifier)
+}
+
 func (w *Window) autoComplete(key, value string) ([]string, error) {
-	return w.db.SearchKeyValue(key, value)
+	if config.Configuration.AutoComplete {
+		return w.db.SearchKeyValue(key, value)
+	} else {
+		return nil, nil
+	}
+
 }
