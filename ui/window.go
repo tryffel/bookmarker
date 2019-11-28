@@ -214,8 +214,10 @@ func NewWindow(colors config.Colors, shortcuts *config.Shortcuts, db *storage.Da
 	w.bookmarks = NewBookmarkTable(w.openBookmark)
 	w.bookmarks.SetDeleteFunc(w.deleteBookmark)
 	w.metadata = NewMetadata(w.closeMetadata)
+	w.metadata.SetSearchFunc(w.autoComplete)
 
 	w.bookmarkForm = modals.NewBookmarkForm(w.createBookmark)
+	w.bookmarkForm.SetSearchFunc(w.autoComplete)
 	w.grid.SetBackgroundColor(colors.Background)
 	w.search = NewSearch(w.Search)
 	w.project.SetSelectFunc(w.FilterByProject)
@@ -230,7 +232,7 @@ func NewWindow(colors config.Colors, shortcuts *config.Shortcuts, db *storage.Da
 
 	col := colors.NavBar.ToNavBar()
 
-	w.metadata = NewMetadata(w.closeMetadata)
+	//w.metadata = NewMetadata(w.closeMetadata)
 	w.navBar = twidgets.NewNavBar(col, w.navBarClicked)
 	navBarLabels = []string{"Help", "New Bookmark", "Open link", "Menu", "Quit"}
 
@@ -502,4 +504,8 @@ func (w *Window) Run() error {
 
 func (w *Window) quit() {
 	w.app.Stop()
+}
+
+func (w *Window) autoComplete(key, value string) ([]string, error) {
+	return w.db.SearchKeyValue(key, value)
 }

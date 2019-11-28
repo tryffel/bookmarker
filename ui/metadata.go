@@ -60,7 +60,12 @@ type Metadata struct {
 	customKeys   *[]string
 	archived     *tview.Checkbox
 
-	doneFunc func(save bool, bookmark *models.Bookmark) bool
+	doneFunc   func(save bool, bookmark *models.Bookmark) bool
+	searchFunc func(key, value string) ([]string, error)
+}
+
+func (m *Metadata) SetSearchFunc(searchFunc func(key, value string) ([]string, error)) {
+	m.searchFunc = searchFunc
 }
 
 func (m *Metadata) Draw(screen tcell.Screen) {
@@ -131,8 +136,8 @@ func NewMetadata(doneFunc func(save bool, bookmark *models.Bookmark) bool) *Meta
 
 	width := 40
 	m.defaultFields[metadataName].SetFieldWidth(width).SetAcceptanceFunc(m.editEnabled)
-	m.defaultFields[metadataTags].SetFieldWidth(width).SetAcceptanceFunc(m.editEnabled)
-	m.defaultFields[metadataProject].SetFieldWidth(width).SetAcceptanceFunc(m.editEnabled)
+	m.defaultFields[metadataProject].SetFieldWidth(width).SetAcceptanceFunc(m.editEnabled).
+		SetAutocompleteFunc(m.wrapSearch(metadataProject))
 	m.defaultFields[metadataTags].SetFieldWidth(width).SetAcceptanceFunc(m.editEnabled)
 	m.defaultFields[metadataCreatedAt].SetFieldWidth(width).SetAcceptanceFunc(m.editEnabled)
 	m.defaultFields[metadataUpdatedAt].SetFieldWidth(width).SetAcceptanceFunc(m.editEnabled)
@@ -208,16 +213,15 @@ func (m *Metadata) initCustomFields() {
 
 	for _, key := range *m.bookmark.MetadataKeys {
 		(*m.customFields)[key] = tview.NewInputField().SetLabel(key).SetText((*m.bookmark.Metadata)[key]).
-			SetAcceptanceFunc(m.editEnabled)
+			SetAcceptanceFunc(m.editEnabled).SetAutocompleteFunc(m.wrapSearch(key))
 		m.form.AddFormItem((*m.customFields)[key])
 	}
 
 	for i := 0; i < len(CustomMetadataFields); i++ {
 		key := CustomMetadataFields[i]
-
 		exists := (*m.customFields)[key]
 		if exists == nil {
-			(*m.customFields)[key] = tview.NewInputField().SetAcceptanceFunc(m.editEnabled).SetLabel(key)
+			(*m.customFields)[key] = tview.NewInputField().SetAcceptanceFunc(m.editEnabled).SetLabel(key).SetAutocompleteFunc(m.wrapSearch(key))
 			m.form.AddFormItem((*m.customFields)[key])
 		}
 	}
@@ -292,5 +296,27 @@ func (m *Metadata) getTitle() {
 		logrus.Errorf("get site title: %v", err)
 	} else {
 		(*m.customFields)["Title"].SetText(metadata.Title)
+	}
+}
+
+//wrap text search with corresponding key
+func (m *Metadata) wrapSearch(field string) func(string) []string {
+	return m.search(field)
+}
+
+//do searching a.k.a completion
+func (m *Metadata) search(field string) func(string) []string {
+	return func(text string) []string {
+		if !m.enableEdit || text == "" || field == "" || m.searchFunc == nil {
+			return nil
+		}
+
+		results, err := m.searchFunc(field, text)
+		if err != nil {
+			logrus.Errorf("autocomplete field: %v", err)
+			return nil
+		} else {
+			return results
+		}
 	}
 }

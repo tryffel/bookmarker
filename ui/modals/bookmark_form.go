@@ -28,9 +28,10 @@ import (
 )
 
 type BookmarkForm struct {
-	form     *tview.Form
-	doneFunc func()
-	formFunc func(bookmark *models.Bookmark)
+	form       *tview.Form
+	doneFunc   func()
+	formFunc   func(bookmark *models.Bookmark)
+	searchFunc func(key, value string) ([]string, error)
 
 	nameField        *tview.InputField
 	descriptionField *tview.InputField
@@ -61,7 +62,8 @@ func NewBookmarkForm(createFunc func(bookmark *models.Bookmark)) *BookmarkForm {
 	b.nameField = tview.NewInputField().SetLabel("Name").SetPlaceholder("bookmark")
 	b.descriptionField = tview.NewInputField().SetLabel("Description").SetPlaceholder("my bookmark")
 	b.linkField = tview.NewInputField().SetLabel("Link").SetPlaceholder("https://...")
-	b.projectField = tview.NewInputField().SetLabel("Project").SetPlaceholder("bookmarks.a")
+	b.projectField = tview.NewInputField().SetLabel("Project").SetPlaceholder("bookmarks.a").
+		SetAutocompleteFunc(b.search("Project"))
 	b.tagsField = tview.NewInputField().SetLabel("Tags").SetPlaceholder("a,b")
 
 	b.nameField.SetPlaceholderTextColor(colors.TextPlaceHolder)
@@ -71,12 +73,15 @@ func NewBookmarkForm(createFunc func(bookmark *models.Bookmark)) *BookmarkForm {
 	b.tagsField.SetPlaceholderTextColor(colors.TextPlaceHolder)
 
 	b.initForm()
-
 	return b
 }
 
 func (n *BookmarkForm) SetDoneFunc(doneFunc func()) {
 	n.doneFunc = doneFunc
+}
+
+func (n *BookmarkForm) SetSearchFunc(search func(key, value string) ([]string, error)) {
+	n.searchFunc = search
 }
 
 func (n *BookmarkForm) Draw(screen tcell.Screen) {
@@ -159,7 +164,9 @@ func (n *BookmarkForm) initForm() {
 	n.form.AddFormItem(n.tagsField)
 	custom := models.DefaulMetadata
 	for _, v := range custom {
-		n.form.AddInputField(v, "", 0, nil, nil)
+		field := tview.NewInputField().SetLabel(v).SetAutocompleteFunc(n.search(v))
+		n.form.AddFormItem(field)
+		//n.form.AddInputField(v, "", 0, nil, nil).
 	}
 
 	n.form.AddButton("Create", n.create)
@@ -176,5 +183,26 @@ func (n *BookmarkForm) getTitle() {
 		logrus.Errorf("get site title: %v", err)
 	} else {
 		n.form.GetFormItemByLabel("Title").(*tview.InputField).SetText(metadata.Title)
+	}
+}
+
+func (n *BookmarkForm) wrapSearch(field string) func(string) []string {
+	return n.search(field)
+}
+
+//do searching a.k.a completion
+func (n *BookmarkForm) search(field string) func(string) []string {
+	return func(text string) []string {
+		if text == "" || field == "" || n.searchFunc == nil {
+			return nil
+		}
+
+		results, err := n.searchFunc(field, text)
+		if err != nil {
+			logrus.Errorf("autocomplete field: %v", err)
+			return nil
+		} else {
+			return results
+		}
 	}
 }

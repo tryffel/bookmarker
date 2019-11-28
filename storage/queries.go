@@ -751,6 +751,60 @@ func (d *Database) SearchBookmarksFilter(filter *Filter) ([]*models.Bookmark, er
 	return bookmarks, nil
 }
 
+//SearchKeyValue searches any key-value item for bookmark
+func (d *Database) SearchKeyValue(key, value string) ([]string, error) {
+	key = strings.ToLower(key)
+	value = "%" + strings.ToLower(value) + "%"
+
+	query := `
+SELECT value_lower
+FROM metadata
+WHERE key_lower = ? 
+AND value_lower LIKE ?
+GROUP BY value_lower 
+ORDER BY value_lower ASC
+LIMIT 10;`
+
+	//TODO: user filter for queries
+	if key == "project" {
+		query = `
+SELECT project
+FROM bookmarks
+WHERE project LIKE ? 
+GROUP BY project
+ORDER BY project ASC
+LIMIT 10;`
+	}
+
+	logger := beginQuery(query, "search metadata")
+	results := make([]string, 0, 0)
+
+	var rows *sql.Rows
+	var err error
+
+	if key == "project" {
+		rows, err = d.conn.Query(query, value)
+	} else {
+		rows, err = d.conn.Query(query, key, value)
+	}
+	if err != nil {
+		logger.log(err)
+		return results, err
+	}
+
+	for rows.Next() {
+		var val string
+		err = rows.Scan(&val)
+		if err != nil {
+			logrus.Error("Scan value: %v", err)
+		}
+
+		results = append(results, val)
+	}
+	logger.log(nil)
+	return results, nil
+}
+
 //Bulk modify modifies multple bookmarks defined with filter to state defined in modifier
 func (d *Database) BulkModify(filter *Filter, modifier *Modifier) (int, error) {
 	query, params, err := filter.bulkUpdateQuery(modifier)
