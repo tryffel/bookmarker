@@ -103,6 +103,8 @@ LIMIT 500;
 		err = rows.Scan(&b.Id, &b.Name, &b.Description, &b.Content, &b.Project, &b.CreatedAt, &b.UpdatedAt, &tags)
 		if err != nil {
 			logrus.Errorf("Scan rows failed: %v", err)
+			err = rows.Close()
+			break
 		}
 		if tags.String != "" {
 			t := strings.Split(tags.String, ",")
@@ -155,6 +157,8 @@ FROM bookmarks `
 		err := rows.Scan(&project, &count)
 		if err != nil {
 			logrus.Errorf("scan rows: %v", err)
+			err = rows.Close()
+			break
 		}
 		strings = append(strings, project)
 		counts = append(counts, count)
@@ -191,6 +195,8 @@ ORDER BY tags.name ASC;
 		err = rows.Scan(&tag, &count)
 		if err != nil {
 			logrus.Errorf("Error scanning row: %v", err)
+			err = rows.Close()
+			break
 		}
 
 		if tag.String != "" {
@@ -260,11 +266,10 @@ func (d *Database) NewBookmarks(bookmarks []*models.Bookmark, AddTags []string) 
 
 	rows.Next()
 	err = rows.Scan(&id)
+	defer rows.Close()
 	if err != nil {
 		return fmt.Errorf("failed to scan last id: %v", err)
-
 	}
-	err = rows.Close()
 
 	tx, err := d.conn.Beginx()
 	if err != nil {
@@ -406,6 +411,8 @@ ORDER BY metadata.bookmark ASC,
 		err = rows.Scan(&key, &value)
 		if err != nil {
 			logrus.Errorf("scan rows: %v", err)
+			err = rows.Close()
+			break
 		}
 
 		(*bookmark.Metadata)[key] = value
@@ -476,6 +483,8 @@ LIMIT 300;
 		err := rows.Scan(&b.Id, &b.Name, &b.Description, &b.Content, &b.Project, &b.CreatedAt, &b.UpdatedAt, &b.Archived, &tag)
 		if err != nil {
 			logrus.Errorf("scan bookmark rows: %v", err)
+			err = rows.Close()
+			break
 		}
 
 		if tag.String != "" {
@@ -594,6 +603,8 @@ LIMIT 100;
 		err = rows.Scan(&b.Id, &b.Name, &b.Description, &b.Content, &b.Project, &b.CreatedAt, &b.UpdatedAt, &tags)
 		if err != nil {
 			logrus.Errorf("Scan rows failed: %v", err)
+			err = rows.Close()
+			break
 		}
 		if tags.String != "" {
 			t := strings.Split(tags.String, ",")
@@ -691,7 +702,10 @@ func (d *Database) GetStatistics() (*Statistics, error) {
 
 	rows, err := d.conn.Query(query)
 	if err != nil {
-		rows.Close()
+		e := rows.Close()
+		if e != nil {
+			err = fmt.Errorf("%v; %v", err, e)
+		}
 		return s, err
 	}
 
@@ -739,6 +753,8 @@ func (d *Database) SearchBookmarksFilter(filter *Filter) ([]*models.Bookmark, er
 		err := rows.Scan(&b.Id, &b.Name, &b.Description, &b.Content, &b.Project, &b.CreatedAt, &b.UpdatedAt, &b.Archived, &tag)
 		if err != nil {
 			logrus.Errorf("scan bookmark rows: %v", err)
+			err = rows.Close()
+			break
 		}
 
 		if tag.String != "" {
@@ -798,6 +814,8 @@ LIMIT ?;`
 		err = rows.Scan(&val)
 		if err != nil {
 			logrus.Error("Scan value: %v", err)
+			err = rows.Close()
+			break
 		}
 
 		results = append(results, val)
