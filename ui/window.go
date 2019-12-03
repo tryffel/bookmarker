@@ -53,6 +53,7 @@ type Window struct {
 	search     *Search
 	menu       *modals.Menu
 	importForm *modals.ImportForm
+	modify     *modals.Modify
 	searchOpen bool
 
 	help         *modals.Help

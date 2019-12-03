@@ -28,6 +28,7 @@ const (
 	MenuActionNone MenuAction = iota
 	MenuActionImport
 	MenuActionExport
+	MenuActionModify
 )
 
 //Menu provides modal to perform multiple actions
@@ -53,6 +54,7 @@ func NewMenu() *Menu {
 
 	m.AddItem("Import bookmarks", "Import from bookmarks.html file", 'i', m.doImport)
 	m.AddItem("Export bookmarks", "Export into bookmarks.html file", 'e', m.doExport)
+	m.AddItem("Bulk Modify", "Modify multiple bookmarks with given filter", 'm', m.doModify)
 
 	return m
 }
@@ -89,5 +91,11 @@ func (m *Menu) doImport() {
 func (m *Menu) doExport() {
 	if (m.doneFunc) != nil {
 		m.doneFunc(MenuActionExport)
+	}
+}
+
+func (m *Menu) doModify() {
+	if (m.doneFunc) != nil {
+		m.doneFunc(MenuActionModify)
 	}
 }
