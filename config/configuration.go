@@ -51,6 +51,10 @@ func (a *ApplicationConfig) Logfile() string {
 	return a.Log
 }
 
+func (a *ApplicationConfig) ConfigDir() string {
+	return a.configDir
+}
+
 //Default configuration which config file overwrites
 func defaultConfig() *ApplicationConfig {
 	conf := &ApplicationConfig{

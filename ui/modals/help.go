@@ -28,8 +28,9 @@ import (
 const (
 	helpText = `
 Bookmarker help page. Press <esc> to close this window.
-
-
+Navigation
+* J/K (row up/down)
+* Tab (move between widgets / metadata fields)
 
 `
 
@@ -90,7 +91,6 @@ func NewHelp() *Help {
 
 func (h *Help) Update(stats *storage.Statistics) {
 	text := fmt.Sprintf("%s\nv %s\n%s", logo, config.Version, helpText)
-	//h.TextView.SetText(text)
 
 	runStats := runtime.MemStats{}
 	runtime.ReadMemStats(&runStats)
@@ -100,6 +100,7 @@ func (h *Help) Update(stats *storage.Statistics) {
 		stats.Bookmarks, stats.Archived, stats.Tags, stats.Projects, stats.LastBookmark.Format(timeFormat))
 
 	text += fmt.Sprintf("Memory: %s\n", formatBytes(runStats.Alloc))
+	text += fmt.Sprintf("Config location: %s\n", config.Configuration.ConfigDir())
 	h.SetText(text)
 }
 
