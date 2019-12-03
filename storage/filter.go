@@ -18,14 +18,20 @@ package storage
 
 import (
 	"fmt"
+	"github.com/sirupsen/logrus"
+	"regexp"
 	"strings"
 	"time"
 )
 
 type StringFilter struct {
-	Name   string
-	Strict bool
+	Name    string
+	Strict  bool
+	Inverse bool
 }
+
+var queryPattern = `([+-])?([a-zA-Z]+):(\w+|'[\w ]+')`
+var queryRegex = regexp.MustCompile(queryPattern)
 
 //Filter is a filter that represents user defined filterin and sorting
 type Filter struct {
@@ -53,7 +59,9 @@ func NewFilter(query string) (*Filter, error) {
 	f := &Filter{
 		CustomTags: map[string]StringFilter{},
 	}
-	tokens, err := tokenizeQuery(query)
+
+	//tokens, err := tokenizeQuery(query)
+	tokens, err := parseQuery(query)
 	if err != nil {
 		return f, err
 	}
@@ -156,14 +164,49 @@ func tokenizeQuery(query string) (*map[string]StringFilter, error) {
 			if (*result)[queryName].Name != "" {
 				return result, fmt.Errorf("invalid query: %s", token)
 			} else {
-				(*result)[queryName] = StringFilter{t[0], false}
+				(*result)[queryName] = StringFilter{t[0], false, false}
 			}
 		} else if len(t) > 2 || t[1] == "" {
 			return result, fmt.Errorf("invalid query: '%s'", token)
 		} else {
 			//runes := []rune(t[1])
 			//if runes[0] == exactChar && runes[len(runes)-1] == exactChar {
-			(*result)[t[0]] = StringFilter{t[1], false}
+			(*result)[t[0]] = StringFilter{t[1], false, false}
+		}
+	}
+	return result, nil
+}
+
+func parseQuery(query string) (*map[string]StringFilter, error) {
+	result := &map[string]StringFilter{}
+	match := queryRegex.FindAllStringSubmatch(query, -1)
+
+	for i := 0; i < len(match); i++ {
+		row := match[i]
+		if len(row) < 4 {
+			logrus.Info("Regex match < 2")
+		} else {
+			value := row[3]
+			filter := StringFilter{
+				Name:    "",
+				Strict:  false,
+				Inverse: false,
+			}
+
+			if row[1] == "+" {
+				filter.Inverse = false
+			} else if row[1] == "-" {
+				filter.Inverse = true
+			}
+
+			if strings.HasPrefix(value, "'") && strings.HasSuffix(value, "'") {
+				filter.Strict = true
+				value = strings.TrimLeft(value, "'")
+				value = strings.TrimRight(value, "'")
+			}
+			filter.Name = value
+
+			(*result)[row[2]] = filter
 		}
 	}
 	return result, nil
@@ -231,6 +274,9 @@ LIMIT 300;`
 
 		query += "(m.key_lower = ? AND "
 		*params = append(*params, strings.ToLower(key))
+		if filt.Inverse {
+			query += " NOT "
+		}
 		if filt.Strict {
 			query += "m.value_lower = ?) "
 			*params = append(*params, strings.ToLower(filt.Name))
@@ -261,7 +307,11 @@ LIMIT 300;`
 				if i > 0 {
 					query += " AND "
 				}
+				if filt.Inverse {
+					query += " NOT "
+				}
 				query += "(" + key
+
 				if filt.Strict {
 					query += " = ?)"
 					*params = append(*params, strings.ToLower(filt.Name))
@@ -353,6 +403,5 @@ func (f *Filter) bulkUpdateQuery(modifier *Modifier) (string, *[]interface{}, er
 			i += 1
 		}
 	}
-
 	return query, params, nil
 }
