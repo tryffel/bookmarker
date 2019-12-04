@@ -181,32 +181,41 @@ func parseQuery(query string) (*map[string]StringFilter, error) {
 	result := &map[string]StringFilter{}
 	match := queryRegex.FindAllStringSubmatch(query, -1)
 
-	for i := 0; i < len(match); i++ {
-		row := match[i]
-		if len(row) < 4 {
-			logrus.Info("Regex match < 2")
-		} else {
-			value := row[3]
-			filter := StringFilter{
-				Name:    "",
-				Strict:  false,
-				Inverse: false,
-			}
+	// No named fields
+	if len(match) == 0 {
+		(*result)["query"] = StringFilter{
+			Name:    query,
+			Strict:  false,
+			Inverse: false,
+		}
+	} else {
+		for i := 0; i < len(match); i++ {
+			row := match[i]
+			if len(row) < 4 {
+				logrus.Info("Regex match < 2")
+			} else {
+				value := row[3]
+				filter := StringFilter{
+					Name:    "",
+					Strict:  false,
+					Inverse: false,
+				}
 
-			if row[1] == "+" {
-				filter.Inverse = false
-			} else if row[1] == "-" {
-				filter.Inverse = true
-			}
+				if row[1] == "+" {
+					filter.Inverse = false
+				} else if row[1] == "-" {
+					filter.Inverse = true
+				}
 
-			if strings.HasPrefix(value, "'") && strings.HasSuffix(value, "'") {
-				filter.Strict = true
-				value = strings.TrimLeft(value, "'")
-				value = strings.TrimRight(value, "'")
-			}
-			filter.Name = value
+				if strings.HasPrefix(value, "'") && strings.HasSuffix(value, "'") {
+					filter.Strict = true
+					value = strings.TrimLeft(value, "'")
+					value = strings.TrimRight(value, "'")
+				}
+				filter.Name = value
 
-			(*result)[row[2]] = filter
+				(*result)[row[2]] = filter
+			}
 		}
 	}
 	return result, nil
