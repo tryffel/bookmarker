@@ -303,10 +303,10 @@ LIMIT 300;`
 		query += queryBookmark
 
 		data := map[string]StringFilter{
-			"b.lower_name":  f.Name,
-			"b.description": f.Description,
-			"b.content":     f.Content,
-			"b.project":     f.Project,
+			"b.lower_name":        f.Name,
+			"b.description_lower": f.Description,
+			"b.content":           f.Content,
+			"b.project":           f.Project,
 			//"b.tags": 		 f.Tags,
 		}
 

@@ -19,4 +19,7 @@ package migrations
 const v3 = `
 ALTER TABLE bookmarks
 ADD COLUMN archived BOOL NOT NULL DEFAULT FALSE;
+
+ALTER TABLE bookmarks
+ADD COLUMN description_lower STRING;
 `

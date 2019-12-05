@@ -210,12 +210,12 @@ ORDER BY tags.name ASC;
 func (d *Database) NewBookmark(b *models.Bookmark) error {
 	query := `
 INSERT INTO 
-bookmarks (name, lower_name, description, content, project, created_at, updated_at, archived) 
+bookmarks (name, lower_name, description, description_lower, content, project, created_at, updated_at, archived) 
 VALUES (?,?,?,?,?,?,?,?); SELECT last_insert_rowid() FROM bookmarks`
 
 	logger := beginQuery(query, "new bookmark")
-	res, err := d.conn.Exec(query, b.Name, b.LowerName, b.Description, b.Content, strings.ToLower(b.Project),
-		b.CreatedAt, b.UpdatedAt, b.Archived)
+	res, err := d.conn.Exec(query, b.Name, b.LowerName, b.Description, strings.ToLower(b.Description), b.Content,
+		strings.ToLower(b.Project), b.CreatedAt, b.UpdatedAt, b.Archived)
 
 	if err != nil {
 		logger.log(err)
@@ -290,10 +290,10 @@ func (d *Database) NewBookmarks(bookmarks []*models.Bookmark, AddTags []string) 
 
 		query := `
 		INSERT INTO 
-		bookmarks (name, lower_name, description, content, project, created_at, updated_at) 
+		bookmarks (name, lower_name, description, description_lower, content, project, created_at, updated_at) 
 		VALUES `
 
-		argList := "(?,?,?,?,?,?,?)"
+		argList := "(?,?,?,?,?,?,?,?)"
 		args := make([]interface{}, len(batch)*7)
 
 		// Parse each bookmark, put tags to map, put bookmark to args list
@@ -321,10 +321,11 @@ func (d *Database) NewBookmarks(bookmarks []*models.Bookmark, AddTags []string) 
 			args[7*i] = v.Name
 			args[7*i+1] = v.LowerName
 			args[7*i+2] = v.Description
-			args[7*i+3] = v.Content
-			args[7*i+4] = v.Project
-			args[7*i+5] = v.CreatedAt
-			args[7*i+6] = v.UpdatedAt
+			args[7*i+3] = strings.ToLower(v.Description)
+			args[7*i+4] = v.Content
+			args[7*i+5] = v.Project
+			args[7*i+6] = v.CreatedAt
+			args[7*i+7] = v.UpdatedAt
 
 			if len(v.Tags) > 0 {
 				for _, t := range v.Tags {
@@ -459,7 +460,7 @@ SELECT * FROM
 		LEFT JOIN bookmark_tags bt ON b.id = bt.bookmark
 		LEFT JOIN tags t ON bt.tag = t.id
 	WHERE b.lower_name LIKE ?
-		OR b.description LIKE ?
+		OR b.description_lower LIKE ?
 		OR b.content LIKE ?
 		OR b.project LIKE ?
 		OR t.name LIKE ?
@@ -501,13 +502,16 @@ func (d *Database) UpdateBookmark(b *models.Bookmark) error {
 UPDATE bookmarks SEt
 		name = ?,
 		lower_name = ?,
+		description = ?,
+        description_lower = ?,
 		content = ?,
 		project = ?,
 		updated_at = ?,
 		archived = ?
 WHERE id = ?;
 `
-	_, err := d.conn.Exec(query, b.Name, b.LowerName, b.Content, strings.ToLower(b.Project), b.UpdatedAt, b.Archived, b.Id)
+	_, err := d.conn.Exec(query, b.Name, b.LowerName, b.Description, strings.ToLower(b.Description),
+		b.Content, strings.ToLower(b.Project), b.UpdatedAt, b.Archived, b.Id)
 
 	if err != nil {
 		return err
