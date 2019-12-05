@@ -363,24 +363,27 @@ func (w *Window) Search(text string) {
 	} else {
 		var err error
 		w.filter, err = storage.NewFilter(text)
-		if err != nil || w.filter.IsPlainQuery() {
-			logrus.Errorf("Failed to parse query: %v", err)
-			bookmarks, err := w.db.SearchBookmarks(text)
-			if err != nil {
-				logrus.Errorf("Search bookmarks: %v", err)
-				return
-			}
-			w.bookmarks.SetData(bookmarks)
-			w.bookmarks.ResetCursor()
-		} else {
-			bookmarks, err := w.db.SearchBookmarksFilter(w.filter)
-			if err != nil {
-				logrus.Errorf("Search bookmarks: %v", err)
-				return
-			}
-			w.bookmarks.SetData(bookmarks)
-			w.bookmarks.ResetCursor()
+		if err != nil {
+			logrus.Errorf("Failed to parse search query: %v", err)
+			return
 		}
+	}
+	if w.filter.IsPlainQuery() {
+		bookmarks, err := w.db.SearchBookmarks(text)
+		if err != nil {
+			logrus.Errorf("Search bookmarks: %v", err)
+			return
+		}
+		w.bookmarks.SetData(bookmarks)
+		w.bookmarks.ResetCursor()
+	} else {
+		bookmarks, err := w.db.SearchBookmarksFilter(w.filter)
+		if err != nil {
+			logrus.Errorf("Search bookmarks: %v", err)
+			return
+		}
+		w.bookmarks.SetData(bookmarks)
+		w.bookmarks.ResetCursor()
 	}
 }
 
