@@ -211,7 +211,7 @@ func (d *Database) NewBookmark(b *models.Bookmark) error {
 	query := `
 INSERT INTO 
 bookmarks (name, lower_name, description, description_lower, content, project, created_at, updated_at, archived) 
-VALUES (?,?,?,?,?,?,?,?); SELECT last_insert_rowid() FROM bookmarks`
+VALUES (?,?,?,?,?,?,?,?,?); SELECT last_insert_rowid() FROM bookmarks`
 
 	logger := beginQuery(query, "new bookmark")
 	res, err := d.conn.Exec(query, b.Name, b.LowerName, b.Description, strings.ToLower(b.Description), b.Content,
