@@ -381,7 +381,7 @@ func (w *Window) Search(text string) {
 		w.bookmarks.SetData(bookmarks)
 		w.bookmarks.ResetCursor()
 	} else {
-		bookmarks, err := w.db.SearchBookmarksFilter(w.filter)
+		bookmarks, err := w.db.FilterBookmarks(w.filter)
 		if err != nil {
 			logrus.Errorf("Search bookmarks: %v", err)
 			return
@@ -404,11 +404,15 @@ func (w *Window) FilterByProject(project *models.Project) {
 		name := ""
 		strict := true
 		name = project.FullName()
+		filt := &storage.Filter{}
+		filt.Clear()
+		filt.Project.Name = name
+		filt.Project.Strict = strict
 		logrus.Debug("Filtering with projects: ", name)
 		if project.Parent != nil || len(project.Children) > 0 {
 			strict = false
 		}
-		bookmarks, err := w.db.GetProjectBookmarks(name, strict)
+		bookmarks, err := w.db.FilterBookmarks(filt)
 		if err != nil {
 
 			logrus.Error("Get bookmarks by project: %v", err)
@@ -511,8 +515,8 @@ func (w *Window) RefreshBookmarks() {
 
 func (w *Window) Run() error {
 	bookmarks, _ := w.db.GetAllBookmarks()
-	projects, _ := w.db.GetProjects("", false)
-	tags, _ := w.db.GetTags()
+	projects, _ := w.db.GetAllProjects("", false)
+	tags, _ := w.db.GetAllTags()
 
 	w.bookmarks.SetData(bookmarks)
 	w.tags.SetData(tags)
@@ -546,7 +550,7 @@ func (w *Window) SortBookmarks(column string, sort twidgets.Sort) {
 		w.filter.SortDir = "DESC"
 	}
 
-	bookmarks, err := w.db.SearchBookmarksFilter(w.filter)
+	bookmarks, err := w.db.FilterBookmarks(w.filter)
 	if err != nil {
 		logrus.Error(err)
 	} else {

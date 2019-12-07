@@ -116,12 +116,12 @@ LIMIT 500;
 	return bookmarks, nil
 }
 
-//GetProjects gets all projects
+//GetAllProjects gets all projects
 // If name is specified, search for that name
 // If strict is set to true, then name must match project name exactly,
 // Otherwise use wildcards
 // If name == "", get all projects
-func (d *Database) GetProjects(name string, strict bool) ([]*models.Project, error) {
+func (d *Database) GetAllProjects(name string, strict bool) ([]*models.Project, error) {
 	query := `
 SELECT 
     project,
@@ -169,7 +169,7 @@ FROM bookmarks `
 	return projects, nil
 }
 
-func (d *Database) GetTags() (*map[string]int, error) {
+func (d *Database) GetAllTags() (*map[string]int, error) {
 	query := `
 SELECT
        name,
@@ -563,63 +563,6 @@ WHERE bookmark = ?
 	return nil
 }
 
-//GetProjectBookmarks gets all bookmarks with given project.
-// If strict = true, project must match exatly, else all children are returned also
-func (d *Database) GetProjectBookmarks(project string, strict bool) ([]*models.Bookmark, error) {
-
-	query := `
-SELECT
-    b.id as id,
-    b.name AS name, 
-    b.description AS description, 
-    b.content as content, 
-    b.project AS project, 
-    b.created_at AS created_at,
-    b.updated_at AS updated_at,
-    GROUP_CONCAT(t.name) AS tags
-FROM bookmarks b
-LEFT JOIN bookmark_tags bt ON b.id = bt.bookmark
-LEFT JOIN tags t ON bt.tag = t.id 
-WHERE b.project `
-
-	if !strict {
-		query += "LIKE ? "
-		project = "%" + project + "%"
-	} else {
-		query += "= ? "
-	}
-	query += `
-GROUP BY b.id
-ORDER BY b.name ASC
-LIMIT 100;
-`
-	logger := beginQuery(query, "get project bookmarks")
-	rows, err := d.conn.Query(query, project)
-	if err != nil {
-		logger.log(err)
-		return nil, err
-	}
-
-	bookmarks := make([]*models.Bookmark, 0)
-	for rows.Next() {
-		var b models.Bookmark
-		var tags sql.NullString
-		err = rows.Scan(&b.Id, &b.Name, &b.Description, &b.Content, &b.Project, &b.CreatedAt, &b.UpdatedAt, &tags)
-		if err != nil {
-			logrus.Errorf("Scan rows failed: %v", err)
-			err = rows.Close()
-			break
-		}
-		if tags.String != "" {
-			t := strings.Split(tags.String, ",")
-			b.Tags = t
-		}
-		bookmarks = append(bookmarks, &b)
-	}
-	logger.log(nil)
-	return bookmarks, nil
-}
-
 func (d *Database) InsertTags(tags []string, tx *sqlx.Tx) error {
 	query := "INSERT INTO tags (name) VALUES "
 
@@ -735,7 +678,7 @@ LIMIT 1
 	return s, err
 }
 
-func (d *Database) SearchBookmarksFilter(filter *Filter) ([]*models.Bookmark, error) {
+func (d *Database) FilterBookmarks(filter *Filter) ([]*models.Bookmark, error) {
 	query, params, err := filter.bookmarksQuery()
 	if err != nil {
 		return nil, err
