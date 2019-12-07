@@ -45,8 +45,10 @@ func GetPageMetadata(url string) (*PageMetadata, error) {
 			return
 		}
 		if node.Type == html.ElementNode && node.Data == "title" && metadata.Title == "" {
-			metadata.Title = node.FirstChild.Data
-			return
+			if node.FirstChild != nil {
+				metadata.Title = node.FirstChild.Data
+				return
+			}
 		}
 
 		for c := node.FirstChild; c != nil; c = c.NextSibling {
