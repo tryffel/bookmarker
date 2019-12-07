@@ -380,6 +380,7 @@ func (w *Window) Search(text string) {
 		}
 		w.bookmarks.SetData(bookmarks)
 		w.bookmarks.ResetCursor()
+		w.refreshProjects()
 	} else {
 		bookmarks, err := w.db.FilterBookmarks(w.filter)
 		if err != nil {
@@ -388,6 +389,16 @@ func (w *Window) Search(text string) {
 		}
 		w.bookmarks.SetData(bookmarks)
 		w.bookmarks.ResetCursor()
+		w.refreshProjects()
+	}
+}
+
+func (w *Window) refreshProjects() {
+	projects, err := w.db.FilterProject(w.filter)
+	if err != nil {
+		logrus.Errorf("get projects: %v", err)
+	} else {
+		w.project.SetData(projects)
 	}
 }
 

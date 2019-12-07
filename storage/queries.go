@@ -786,3 +786,51 @@ func (d *Database) BulkModify(filter *Filter, modifier *Modifier) (int, error) {
 	count, err := res.RowsAffected()
 	return int(count), err
 }
+
+// FilterProject filters projects by given filter. If only filter.Project is defined
+// filter project by that. Otherwise filter projects by bookmarks that match given filter
+func (d *Database) FilterProject(filter *Filter) ([]*models.Project, error) {
+	query := `
+	SELECT 
+	project,
+	count(id) as count
+	FROM (
+	`
+
+	q, params, err := filter.bookmarksQuery()
+	if err != nil {
+		return nil, err
+	}
+
+	query += q
+	query += ") GROUP BY project ORDER BY project ASC"
+
+	logger := beginQuery(query, "filter projects")
+
+	rows, err := d.conn.Query(query, *params...)
+	if err != nil {
+		logger.log(err)
+		return nil, err
+	}
+
+	strings := make([]string, 0)
+	counts := make([]int, 0)
+
+	for rows.Next() {
+		var project = ""
+		var count = 0
+
+		err := rows.Scan(&project, &count)
+		if err != nil {
+			logrus.Errorf("scan rows: %v", err)
+			err = rows.Close()
+			break
+		}
+		strings = append(strings, project)
+		counts = append(counts, count)
+	}
+
+	projects := models.ParseTrees(strings, counts)
+	logger.log(err)
+	return projects, nil
+}
