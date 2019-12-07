@@ -22,6 +22,7 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"tryffel.net/go/bookmarker/config"
 )
 
 type StringFilter struct {
@@ -58,6 +59,10 @@ type Filter struct {
 func NewFilter(query string) (*Filter, error) {
 	f := &Filter{
 		CustomTags: map[string]StringFilter{},
+	}
+
+	if query == "" {
+		return f, nil
 	}
 
 	//tokens, err := tokenizeQuery(query)
@@ -134,6 +139,10 @@ func (f *Filter) parseTokens(tokens *map[string]StringFilter) error {
 //Clear clears filter
 func (f *Filter) Clear() {
 	*f = Filter{}
+	if config.Configuration.HideArchived {
+		f.Archived.Strict = true
+		f.Archived.Name = "false"
+	}
 }
 
 func (f *Filter) IsEmpty() bool {
@@ -260,13 +269,32 @@ LEFT JOIN tags t ON bt.tag = t.id
 
 	queryEnd := `
 GROUP BY b.id
-ORDER BY b.name ASC
-LIMIT 300;`
+ORDER BY 
+	`
 
-	queryEndMetadata := ` ) AS a
-GROUP BY a.id
-ORDER BY a.name ASC
-LIMIT 300;`
+	queryEndMetadata := ` ) AS b
+GROUP BY b.id
+ORDER BY 
+	`
+
+	queryNoFilters := `
+SELECT
+	b.id as id,
+	b.name AS name,
+	b.description AS description,
+	b.content as content,
+	b.project AS project,
+	b.created_at AS created_at,
+	b.updated_at AS updated_at,
+	b.archived AS archived,
+GROUP_CONCAT(t.name) AS tags
+FROM bookmarks b
+LEFT JOIN bookmark_tags bt ON b.id = bt.bookmark
+LEFT JOIN tags t ON bt.tag = t.id
+GROUP BY b.id
+ORDER BY `
+
+	queryLimit := "LIMIT 300"
 
 	query := ""
 
@@ -344,6 +372,14 @@ LIMIT 300;`
 	} else if !f.CustomOnly() {
 		query += queryEnd
 	}
+	//validate sorting opts
+	f.parseSort()
+	if f.IsEmpty() {
+		query = queryNoFilters
+	}
+
+	query += " " + f.SortField + " " + f.SortDir + " "
+	query += queryLimit
 	return query, params, nil
 }
 
@@ -413,4 +449,28 @@ func (f *Filter) bulkUpdateQuery(modifier *Modifier) (string, *[]interface{}, er
 		}
 	}
 	return query, params, nil
+}
+
+func (f *Filter) parseSort() {
+	switch f.SortField {
+	case "Name":
+		f.SortField = "b.name"
+	case "Description":
+		f.SortField = "b.description"
+	case "Project":
+		f.SortField = "b.project"
+	case "Added at":
+		f.SortField = "b.created_at"
+	case "Link":
+		f.SortField = "b.content"
+	default:
+		f.SortField = "b.name"
+	}
+
+	switch f.SortDir {
+	case "ASC":
+	case "DESC":
+	default:
+		f.SortDir = "ASC"
+	}
 }

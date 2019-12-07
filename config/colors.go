@@ -110,6 +110,7 @@ func (c *ColorNavBar) ToNavBar() *twidgets.NavBarColors {
 
 type ColorBookmarks struct {
 	Background         tcell.Color
+	Background2nd      tcell.Color
 	BackgroundSelected tcell.Color
 	Text               tcell.Color
 	TextSelected       tcell.Color
@@ -120,6 +121,7 @@ type ColorBookmarks struct {
 func defaultColorBookmarks() ColorBookmarks {
 	return ColorBookmarks{
 		Background:         colorBackground,
+		Background2nd:      tcell.Color236,
 		BackgroundSelected: tcell.Color23,
 		Text:               tcell.Color252,
 		TextSelected:       tcell.Color253,

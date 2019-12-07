@@ -215,6 +215,7 @@ func NewWindow(colors config.Colors, shortcuts *config.Shortcuts, db *storage.Da
 	w.layout.SetGridYSize([]int{3, -1, -1, -1, -1, -1, -1, -1, -1, 3})
 	w.bookmarks = NewBookmarkTable(w.openBookmark)
 	w.bookmarks.SetDeleteFunc(w.deleteBookmark)
+	w.bookmarks.SetSortFunc(w.SortBookmarks)
 	w.metadata = NewMetadata(w.closeMetadata)
 	w.metadata.SetSearchFunc(w.autoComplete)
 
@@ -232,6 +233,9 @@ func NewWindow(colors config.Colors, shortcuts *config.Shortcuts, db *storage.Da
 	w.grid.SetRows(1, -1)
 	w.grid.SetColumns(-1)
 	w.grid.SetMinSize(1, 2)
+
+	w.filter, _ = storage.NewFilter("")
+	w.filter.Clear()
 
 	col := colors.NavBar.ToNavBar()
 
@@ -498,6 +502,7 @@ func (w *Window) deleteBookmark(bookmark *models.Bookmark) {
 
 func (w *Window) RefreshBookmarks() {
 	bookmarks, err := w.db.GetAllBookmarks()
+	w.filter.Clear()
 	if err != nil {
 		return
 	}
@@ -531,4 +536,20 @@ func (w *Window) autoComplete(key, value string) ([]string, error) {
 		return nil, nil
 	}
 
+}
+
+func (w *Window) SortBookmarks(column string, sort twidgets.Sort) {
+	w.filter.SortField = column
+	if sort == twidgets.SortAsc {
+		w.filter.SortDir = "ASC"
+	} else if sort == twidgets.SortDesc {
+		w.filter.SortDir = "DESC"
+	}
+
+	bookmarks, err := w.db.SearchBookmarksFilter(w.filter)
+	if err != nil {
+		logrus.Error(err)
+	} else {
+		w.bookmarks.SetData(bookmarks)
+	}
 }

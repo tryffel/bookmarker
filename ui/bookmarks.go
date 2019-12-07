@@ -17,19 +17,20 @@
 package ui
 
 import (
-	"fmt"
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
 	"tryffel.net/go/bookmarker/config"
 	"tryffel.net/go/bookmarker/storage/models"
+	"tryffel.net/go/twidgets"
 )
 
 type BookmarkTable struct {
-	table        *tview.Table
+	table        *twidgets.Table
 	items        []*models.Bookmark
 	hasFocus     bool
 	metadataFunc func(bookmark *models.Bookmark)
 	deleteFunc   func(bookmark *models.Bookmark)
+	sortFunc     func(column string, sort twidgets.Sort)
 }
 
 func (b *BookmarkTable) Draw(screen tcell.Screen) {
@@ -86,28 +87,19 @@ func (b *BookmarkTable) SetData(data []*models.Bookmark) {
 	}
 	b.items = data
 
-	b.table.Clear()
-	b.table.SetCell(0, 0, tableHeaderCell("#"))
-	b.table.SetCell(0, 1, tableHeaderCell("Name"))
-	b.table.SetCell(0, 2, tableHeaderCell("Description"))
-	b.table.SetCell(0, 3, tableHeaderCell("Project"))
-	b.table.SetCell(0, 4, tableHeaderCell("Link"))
-	b.table.SetCell(0, 5, tableHeaderCell("Tags"))
-	b.table.SetCell(0, 6, tableHeaderCell("Added at"))
-	b.table.SetOffset(1, 0)
-
+	b.table.Clear(false)
 	for i, v := range data {
-		b.table.SetCell(i+1, 0, tableCell(fmt.Sprint(i+1)))
-		b.table.SetCell(i+1, 1, tableCell(v.Name).SetMaxWidth(25).SetExpansion(1))
-		b.table.SetCell(i+1, 2, tableCell(v.Description).SetMaxWidth(35).SetExpansion(3))
-		b.table.SetCell(i+1, 3, tableCell(v.Project).SetMaxWidth(20).SetExpansion(1))
-		b.table.SetCell(i+1, 4, tableCell(v.ContentDomain()).SetMaxWidth(20).SetExpansion(1))
-		tags := tableCell(v.TagsString(true)).SetMaxWidth(13).SetExpansion(1)
-		tags.SetTextColor(config.Configuration.Colors.Tags.Text)
-		b.table.SetCell(i+1, 5, tags)
-		b.table.SetCell(i+1, 6, tableCell(ShortTimeSince(v.CreatedAt)).SetMaxWidth(15))
-	}
+		row := []string{
+			v.Name,
+			v.Description,
+			v.Project,
+			v.ContentDomain(),
+			v.TagsString(true),
+			ShortTimeSince(v.CreatedAt),
+		}
 
+		b.table.AddRow(i, row...)
+	}
 }
 
 func (b *BookmarkTable) ResetCursor() {
@@ -117,6 +109,10 @@ func (b *BookmarkTable) ResetCursor() {
 
 func (b *BookmarkTable) SetDeleteFunc(delete func(bookmark *models.Bookmark)) {
 	b.deleteFunc = delete
+}
+
+func (b *BookmarkTable) SetSortFunc(sort func(column string, sort twidgets.Sort)) {
+	b.sortFunc = sort
 }
 
 func tableCell(text string) *tview.TableCell {
@@ -136,7 +132,7 @@ func tableHeaderCell(text string) *tview.TableCell {
 
 func NewBookmarkTable(openMetadata func(bookmark *models.Bookmark)) *BookmarkTable {
 	b := &BookmarkTable{
-		table:        tview.NewTable(),
+		table:        twidgets.NewTable(),
 		items:        []*models.Bookmark{},
 		metadataFunc: openMetadata,
 	}
@@ -150,6 +146,13 @@ func NewBookmarkTable(openMetadata func(bookmark *models.Bookmark)) *BookmarkTab
 	b.table.SetSelectable(true, false)
 	b.table.SetFixed(1, 10)
 
+	b.table.SetAddCellFunc(b.addCell)
+	b.table.SetShowIndex(true)
+	b.table.SetColumns([]string{"Name", "Description", "Project", "Link", "Tags", "Added at"})
+	b.table.SetColumnWidths([]int{3, 25, 35, 20, 10, 15, 10})
+	b.table.SetColumnExpansions([]int{0, 1, 3, 1, 1, 1, 1})
+	b.table.SetSort(0, twidgets.SortAsc)
+	b.table.SetSortFunc(b.sort)
 	return b
 }
 
@@ -162,4 +165,23 @@ func (b *BookmarkTable) GetSelection() *models.Bookmark {
 		return nil
 	}
 	return b.items[index-1]
+}
+
+func (b *BookmarkTable) addCell(cell *tview.TableCell, header bool, row int) {
+	if header {
+		cell.SetTextColor(config.Configuration.Colors.Bookmarks.HeaderText)
+		cell.SetAlign(tview.AlignLeft)
+	} else {
+		cell.SetTextColor(config.Configuration.Colors.Bookmarks.Text)
+		if row%2 == 1 {
+			cell.SetBackgroundColor(config.Configuration.Colors.Bookmarks.Background2nd)
+		}
+		cell.SetAlign(tview.AlignLeft)
+	}
+}
+
+func (b *BookmarkTable) sort(column string, sort twidgets.Sort) {
+	if b.sortFunc != nil {
+		b.sortFunc(column, sort)
+	}
 }

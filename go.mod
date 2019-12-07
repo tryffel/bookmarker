@@ -21,5 +21,5 @@ require (
 	golang.org/x/net v0.0.0-20190603091049-60506f45cf65
 	golang.org/x/sys v0.0.0-20191120155948-bd437916bb0e // indirect
 	google.golang.org/appengine v1.6.5 // indirect
-	tryffel.net/go/twidgets v0.0.0-20191121195747-7b5ff8b0d39c
+	tryffel.net/go/twidgets v0.0.0-20191207193215-9ef2d4489227
 )
