@@ -328,7 +328,11 @@ func (w *Window) openMetadata() {
 	w.layout.Grid().AddItem(w.metadata, 0, 7, 10, 3, 10, 10, true)
 
 	w.app.QueueUpdateDraw(func() {
-		err := w.db.GetBookmarkMetadata(bookmark)
+		bookmark, err := w.db.GetBookmark(bookmark.Id)
+		if err != nil {
+			logrus.Errorf("get bookmark %v", err)
+		}
+		err = w.db.GetBookmarkMetadata(bookmark)
 		if err != nil {
 			logrus.Errorf("Get metadata: %v", err)
 		}

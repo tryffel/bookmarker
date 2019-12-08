@@ -422,6 +422,40 @@ ORDER BY metadata.bookmark ASC,
 	return nil
 }
 
+func (d *Database) GetBookmark(id int) (*models.Bookmark, error) {
+	query := `
+SELECT
+	b.id AS id,
+	b.name AS name,
+	b.description AS description,
+	b.content AS content,
+	b.project AS project,
+	b.created_at AS created_at,
+	b.updated_at AS updated_at,
+	b.archived AS archived,
+	GROUP_CONCAT(t.name) AS tags
+FROM bookmarks b
+LEFT JOIN bookmark_tags bt ON b.id = bt.bookmark
+LEFT JOIN tags t ON bt.tag = t.id
+WHERE b.id = ?
+LIMIT 1`
+
+	b := &models.Bookmark{}
+	rows, err := d.conn.Query(query, id)
+	if err != nil {
+		return b, err
+	}
+
+	rows.Next()
+	var tags string
+	err = rows.Scan(&b.Id, &b.Name, &b.Description, &b.Content, &b.Project, &b.CreatedAt, &b.UpdatedAt, &b.Archived, &tags)
+
+	if tags != "" {
+		b.Tags = strings.Split(tags, ",")
+	}
+	return b, err
+}
+
 //SearchBookmarks searches both bookmarks table and additional metadata fields
 // If full text search is enabled, combine those results as well
 func (d *Database) SearchBookmarks(text string) ([]*models.Bookmark, error) {
