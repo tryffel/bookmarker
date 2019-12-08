@@ -42,6 +42,11 @@ var BookmarkerMigrations = []Migrator{
 		Level:  3,
 		Schema: v3,
 	},
+	&Migration{
+		Name:   "add full-text-search capability",
+		Level:  4,
+		Schema: v4,
+	},
 }
 
 type Schema struct {
@@ -152,10 +157,10 @@ func migrateSingle(db *sqlx.DB, migration Migrator) error {
 	_, err := db.Exec("INSERT INTO schemas (level, success, timestamp, took_ms) "+
 		"VALUES ($1, $2, $3, $4)", s.Level, s.Success, s.Timestamp, s.TookMs)
 
-	if err != nil {
+	if merr != nil {
 		return fmt.Errorf("migration failed: insert schema: %v", merr)
 	}
-	return nil
+	return err
 }
 
 // CurrentVersion returns current version

@@ -31,6 +31,7 @@ type ApplicationConfig struct {
 	Log                    string   `toml:"log_file"`
 	AutoComplete           bool     `toml:"autocomplete"`
 	AutoCompleteMaxResults int      `toml:"autocomplete_max_results"`
+	EnableFullTextSearch   bool     `toml:"full_text_search"`
 	Colors                 Colors
 	Shortcuts              Shortcuts
 	configDir              string
@@ -63,6 +64,7 @@ func defaultConfig() *ApplicationConfig {
 		DefaultMetadata:        []string{"language"},
 		AutoComplete:           true,
 		AutoCompleteMaxResults: 20,
+		EnableFullTextSearch:   true,
 		Colors:                 defaultColors(),
 		Shortcuts:              defaultShortcuts(),
 	}

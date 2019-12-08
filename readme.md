@@ -17,6 +17,12 @@ go get -u tryffel.net/go/bookmarker
 GOPATH/bin/bookmarker
 ```
 
+If you wish to enable full text search capability, you need to give following flag during compilation:
+```go
+go build --tags 'fts5'
+
+```
+
 Config file can be set with ```--config``` flag. This will create new file and directories, if they don't exist. 
 Usage:
 ```

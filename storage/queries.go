@@ -423,10 +423,10 @@ ORDER BY metadata.bookmark ASC,
 }
 
 //SearchBookmarks searches both bookmarks table and additional metadata fields
+// If full text search is enabled, combine those results as well
 func (d *Database) SearchBookmarks(text string) ([]*models.Bookmark, error) {
-	text = "%" + text + "%"
 
-	query := `
+	plainQuery := `
 -- metadata
 SELECT * FROM 
 (
@@ -470,7 +470,33 @@ ORDER BY a.name ASC
 LIMIT 300;
 `
 
-	rows, err := d.conn.Query(query, text, text, text, text, text, text, text)
+	ftsQuery := `
+SELECT
+	b.id AS id,
+    HIGHLIGHT(bookmark_fts, 1, '[::u]', '[::-]') name,
+	HIGHLIGHT(bookmark_fts, 2, '[::u]', '[::-]') description,
+    HIGHLIGHT(bookmark_fts, 3, '[::u]', '[::-]') content,
+    HIGHLIGHT(bookmark_fts, 4, '[::u]', '[::-]') project,
+    b.created_at AS created_at,
+    b.updated_at AS updated_at,
+    b.archived AS archived,
+    '' as tags
+FROM bookmark_fts
+JOIN bookmarks b ON bookmark_fts.id = b.id
+WHERE bookmark_fts MATCH '' || ? || ''
+ORDER BY rank DESC;
+	`
+
+	var err error
+	var rows *sql.Rows
+	if config.Configuration.EnableFullTextSearch {
+		//text = "'" + text + "'"
+		rows, err = d.conn.Query(ftsQuery, text)
+	} else {
+		text = "%" + text + "%"
+		rows, err = d.conn.Query(plainQuery, text, text, text, text, text, text, text)
+
+	}
 	if err != nil {
 		return nil, err
 	}

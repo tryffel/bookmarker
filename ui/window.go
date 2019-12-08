@@ -380,7 +380,7 @@ func (w *Window) Search(text string) {
 		}
 		w.bookmarks.SetData(bookmarks)
 		w.bookmarks.ResetCursor()
-		w.refreshProjects()
+		//w.refreshProjects()
 	} else {
 		bookmarks, err := w.db.FilterBookmarks(w.filter)
 		if err != nil {
