@@ -23,6 +23,7 @@ import (
 
 const (
 	colorBackground      = tcell.Color237
+	colorModalbackground = tcell.Color239
 	colorBackgroundLight = tcell.Color239
 	colorText            = tcell.Color23
 )
@@ -40,12 +41,14 @@ type Colors struct {
 	ButtonBackgroundSelected tcell.Color
 	ButtonLabel              tcell.Color
 	ButtonLabelSelected      tcell.Color
+	ModalBackground          tcell.Color
 	NavBar                   ColorNavBar
 	Bookmarks                ColorBookmarks
 	Projects                 ColorProjects
 	BookmarkForm             ColorBookmarkForm
 	Tags                     ColorTags
 	Metadata                 ColorMetadata
+	HelpPage                 ColorHelpPage
 }
 
 func defaultColors() Colors {
@@ -62,12 +65,14 @@ func defaultColors() Colors {
 		ButtonBackgroundSelected: tcell.Color23,
 		ButtonLabel:              tcell.Color254,
 		ButtonLabelSelected:      tcell.Color253,
+		ModalBackground:          colorModalbackground,
 		NavBar:                   defaultColorNavBar(),
 		Bookmarks:                defaultColorBookmarks(),
 		Projects:                 defaultColorProjects(),
 		BookmarkForm:             defaultColorBookmarkform(),
 		Tags:                     defaultColorTags(),
 		Metadata:                 defaultColorMetadata(),
+		HelpPage:                 defaultColorHelpPage(),
 	}
 }
 
@@ -159,7 +164,7 @@ type ColorBookmarkForm struct {
 
 func defaultColorBookmarkform() ColorBookmarkForm {
 	return ColorBookmarkForm{
-		Background:      colorBackgroundLight,
+		Background:      colorModalbackground,
 		Label:           tcell.Color252,
 		Text:            tcell.Color187,
 		TextSelected:    tcell.Color23,
@@ -209,5 +214,18 @@ func defaultColorMetadata() ColorMetadata {
 		TextBackground:     tcell.Color238,
 		TextEdited:         tcell.Color187,
 	}
+}
 
+type ColorHelpPage struct {
+	Background tcell.Color
+	Text       tcell.Color
+	Headers    tcell.Color
+}
+
+func defaultColorHelpPage() ColorHelpPage {
+	return ColorHelpPage{
+		Background: colorModalbackground,
+		Text:       tcell.Color252,
+		Headers:    tcell.Color228,
+	}
 }

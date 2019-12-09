@@ -19,10 +19,11 @@ package storage
 import "time"
 
 type Statistics struct {
-	Bookmarks    int
-	Archived     int
-	Tags         int
-	Projects     int
-	IpfsLinks    int
-	LastBookmark time.Time
+	Bookmarks               int
+	Archived                int
+	Tags                    int
+	Projects                int
+	IpfsLinks               int
+	LastBookmark            time.Time
+	FullTextSearchSupported bool
 }

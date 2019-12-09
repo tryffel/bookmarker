@@ -735,6 +735,8 @@ LIMIT 1
 	}
 	rows.Next()
 	err = rows.Scan(&s.LastBookmark)
+
+	s.FullTextSearchSupported, err = d.FullTextSearchSupported()
 	return s, err
 }
 
@@ -893,4 +895,32 @@ func (d *Database) FilterProject(filter *Filter) ([]*models.Project, error) {
 	projects := models.ParseTrees(strings, counts)
 	logger.log(err)
 	return projects, nil
+}
+
+func (d *Database) FullTextSearchSupported() (bool, error) {
+	query := `
+pragma compile_options`
+
+	rows, err := d.conn.Query(query)
+	if err != nil {
+		return false, err
+	}
+
+	fts := false
+	for rows.Next() {
+		var val string
+		err = rows.Scan(&val)
+		if err != nil {
+			rows.Close()
+			logrus.Errorf("error scanning pragmas: %v", err)
+			break
+		}
+
+		if val == "ENABLE_FTS5" {
+			fts = true
+			rows.Close()
+			break
+		}
+	}
+	return fts, err
 }
