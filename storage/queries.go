@@ -509,7 +509,7 @@ SELECT
 	b.id AS id,
     HIGHLIGHT(bookmark_fts, 1, '[yellow::u]', '[#dadada::-]') name,
 	HIGHLIGHT(bookmark_fts, 2, '[yellow::u]', '[#dadada::-]') description,
-    HIGHLIGHT(bookmark_fts, 3, '[yellow::u]', '[#dadada::-]') content,
+    b.content as content,
     HIGHLIGHT(bookmark_fts, 4, '[yellow::u]', '[#dadada::-]') project,
     b.created_at AS created_at,
     b.updated_at AS updated_at,

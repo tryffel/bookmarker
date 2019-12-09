@@ -45,4 +45,28 @@ SELECT
 FROM metadata;
 
 
+
+-- triggers to keep fts updated
+CREATE TRIGGER create_bookmark_fts
+    AFTER INSERT ON bookmarks BEGIN
+    INSERT INTO bookmark_fts(id, name, description, content, project)
+        VALUES (new.id, new.name, new.description, new.content, new.project);
+END;
+
+CREATE TRIGGER update_bookmark_fts
+    AFTER UPDATE ON bookmarks BEGIN
+    UPDATE bookmark_fts SET
+                            name = new.name,
+                            description = new.description,
+                            content = new.content,
+                            project = new.project
+        WHERE id = new.id;
+END;
+
+CREATE TRIGGER delete_bookmark_fts
+    AFTER DELETE ON bookmarks BEGIN
+        DELETE FROM bookmark_fts
+        WHERE id = old.id;
+END;
+
 `
