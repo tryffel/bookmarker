@@ -35,10 +35,16 @@ import (
 
 func main() {
 	confFile := flag.String("config", "", "Configuration file location. "+
-		"The same directory will be used"+
+		"The same directory will be used "+
 		"for data also. This can be configured from config file.")
 
+	version := flag.Bool("version", false, "Print version info")
 	flag.Parse()
+
+	if *version {
+		fmt.Printf("%s v%s\n", config.AppName, config.Version)
+		return
+	}
 
 	conf, err := config.ReadConfigFile(*confFile)
 	if err != nil {
