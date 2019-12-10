@@ -114,7 +114,7 @@ func (w *Window) inputCapture(event *tcell.EventKey) *tcell.EventKey {
 		w.addModal(w.bookmarkForm, twidgets.ModalSizeMedium)
 	case navbar.OpenBrowser:
 		index, _ := w.bookmarks.table.GetSelection()
-		if len(w.bookmarks.items) > index {
+		if len(w.bookmarks.items) >= index {
 			bookmark := w.bookmarks.items[index-1]
 			err := external.OpenUrlInBrowser(bookmark.Content)
 			if err != nil {
