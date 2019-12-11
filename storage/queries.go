@@ -506,6 +506,11 @@ LIMIT 300;
 
 	ftsQuery := `
 SELECT
+id, name, description, content,
+       project, created_at, updated_at, archived, tags
+FROM (
+-- bookmarks fts
+SELECT
 	b.id AS id,
     HIGHLIGHT(bookmark_fts, 1, '[yellow::u]', '[#dadada::-]') name,
 	HIGHLIGHT(bookmark_fts, 2, '[yellow::u]', '[#dadada::-]') description,
@@ -518,14 +523,33 @@ SELECT
 FROM bookmark_fts
 JOIN bookmarks b ON bookmark_fts.id = b.id
 WHERE bookmark_fts MATCH '' || ? || ''
-ORDER BY rank DESC;
-	`
+-- metadata fts
+UNION
+SELECT
+    b.id AS id,
+    b.name AS name,
+    b.description AS description,
+    b.content AS content,
+    b.project AS project,
+    b.created_at AS created_at,
+    b.updated_at AS updated_at,
+    b.archived as archived,
+    -- skip tags for now
+    '' AS tags
+FROM bookmarks b
+WHERE b.id IN (
+    SELECT
+        id
+    FROM metadata_fts 
+    WHERE metadata_fts MATCH '' || ? || ''
+ORDER BY rank DESC))
+GROUP BY id`
 
 	var err error
 	var rows *sql.Rows
 	if config.Configuration.EnableFullTextSearch {
 		//text = "'" + text + "'"
-		rows, err = d.conn.Query(ftsQuery, text)
+		rows, err = d.conn.Query(ftsQuery, text, text)
 	} else {
 		text = "%" + text + "%"
 		rows, err = d.conn.Query(plainQuery, text, text, text, text, text, text, text)
