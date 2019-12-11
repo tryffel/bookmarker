@@ -26,4 +26,5 @@ type Statistics struct {
 	IpfsLinks               int
 	LastBookmark            time.Time
 	FullTextSearchSupported bool
+	MetadataKeys            []string
 }

@@ -760,6 +760,8 @@ LIMIT 1
 	err = rows.Scan(&s.LastBookmark)
 
 	s.FullTextSearchSupported, err = d.FullTextSearchSupported()
+
+	s.MetadataKeys, err = d.GetMetadataKeys()
 	return s, err
 }
 
@@ -946,4 +948,35 @@ pragma compile_options`
 		}
 	}
 	return fts, err
+}
+
+func (d *Database) GetMetadataKeys() ([]string, error) {
+	query := `
+SELECT key
+FROM metadata
+GROUP BY key
+ORDER BY key ASC;
+`
+
+	log := beginQuery(query, "get all metadata keys")
+
+	results := make([]string, 0)
+
+	rows, err := d.conn.Query(query)
+	if err != nil {
+		log.log(err)
+		return results, err
+	}
+
+	for rows.Next() {
+		var key string
+		err = rows.Scan(&key)
+		if err != nil {
+			rows.Close()
+			break
+		}
+		results = append(results, key)
+	}
+	log.log(err)
+	return results, err
 }

@@ -21,6 +21,7 @@ import (
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
 	"runtime"
+	"strings"
 	"tryffel.net/go/bookmarker/config"
 	"tryffel.net/go/bookmarker/storage"
 )
@@ -158,6 +159,8 @@ func (h *Help) statsPage() string {
 	text += "\n[yellow]Additional info[-]\n"
 	text += fmt.Sprintf("Data location: %s\n", config.Configuration.ConfigDir())
 	text += fmt.Sprintf("Full text search engine supported: %v\n", stats.FullTextSearchSupported)
+
+	text += fmt.Sprintf("Metadata keys: \n  * %s", strings.Join(h.stats.MetadataKeys, "\n  * "))
 	return text
 }
 
