@@ -314,7 +314,7 @@ func (w *Window) openMetadata() {
 	if len(w.bookmarks.items) < index {
 		return
 	}
-	bookmark := w.bookmarks.items[index-1]
+	id := w.bookmarks.items[index-1].Id
 
 	//w.grid.Blur()
 	//w.metadata.Focus(func(p tview.Primitive){})
@@ -328,7 +328,7 @@ func (w *Window) openMetadata() {
 	w.layout.Grid().AddItem(w.metadata, 0, 7, 10, 3, 10, 10, true)
 
 	w.app.QueueUpdateDraw(func() {
-		bookmark, err := w.db.GetBookmark(bookmark.Id)
+		bookmark, err := w.db.GetBookmark(id)
 		if err != nil {
 			logrus.Errorf("get bookmark %v", err)
 		}

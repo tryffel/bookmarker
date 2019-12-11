@@ -402,8 +402,7 @@ ORDER BY metadata.bookmark ASC,
 		return err
 	}
 
-	bookmark.Metadata = &map[string]string{}
-	bookmark.MetadataKeys = &[]string{}
+	bookmark.FillDefaultMetadata()
 
 	for rows.Next() {
 		var key string
@@ -416,8 +415,8 @@ ORDER BY metadata.bookmark ASC,
 			break
 		}
 
-		(*bookmark.Metadata)[key] = value
-		*bookmark.MetadataKeys = append(*bookmark.MetadataKeys, key)
+		bookmark.AddMetadata(key, value)
+
 	}
 	return nil
 }
@@ -447,11 +446,11 @@ LIMIT 1`
 	}
 
 	rows.Next()
-	var tags string
+	var tags sql.NullString
 	err = rows.Scan(&b.Id, &b.Name, &b.Description, &b.Content, &b.Project, &b.CreatedAt, &b.UpdatedAt, &b.Archived, &tags)
 
-	if tags != "" {
-		b.Tags = strings.Split(tags, ",")
+	if tags.String != "" {
+		b.Tags = strings.Split(tags.String, ",")
 	}
 	return b, err
 }

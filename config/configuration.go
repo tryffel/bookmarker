@@ -61,7 +61,7 @@ func defaultConfig() *ApplicationConfig {
 	conf := &ApplicationConfig{
 		LogLevel:               "debug",
 		HideArchived:           true,
-		DefaultMetadata:        []string{"language"},
+		DefaultMetadata:        []string{"Author", "Published At", "Language", "Ipfs", "Class", "Title"},
 		AutoComplete:           true,
 		AutoCompleteMaxResults: 20,
 		EnableFullTextSearch:   true,

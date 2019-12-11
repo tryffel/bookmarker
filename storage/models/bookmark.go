@@ -25,11 +25,10 @@ import (
 	"time"
 )
 
+//DefaultMetadata fields
+// This is appended with configuration values
 var DefaulMetadata = []string{
-	"Author",
-	"Published At",
 	"Title",
-	"Ipfs",
 }
 
 type Bookmark struct {
@@ -87,21 +86,30 @@ func (b *Bookmark) FillDefaultMetadata() {
 		b.Metadata = &map[string]string{}
 	}
 
-	if len(*b.MetadataKeys) > 0 || len(*b.Metadata) > 0 {
-		return
+	// Iterate over existing keys, adding default values if needed
+	if len(*b.Metadata) == 0 && len(*b.MetadataKeys) == 0 {
+		for _, v := range DefaulMetadata {
+			*b.MetadataKeys = append(*b.MetadataKeys, v)
+			(*b.Metadata)[v] = ""
+		}
 	}
+}
 
-	if b.Metadata == nil {
-		b.Metadata = &map[string]string{}
+//AddMetadata adds single key-value metadata to bookmark
+//If key already exists, override it with new value
+func (b *Bookmark) AddMetadata(key, value string) {
+	(*b.Metadata)[key] = value
+	Exists := false
+	for _, v := range *b.MetadataKeys {
+		if v == key {
+			Exists = true
+			break
+		}
 	}
-	if b.MetadataKeys == nil {
-		b.MetadataKeys = &[]string{}
+	if !Exists {
+		*b.MetadataKeys = append(*b.MetadataKeys, key)
 	}
-
-	b.MetadataKeys = &DefaulMetadata
-	for _, v := range DefaulMetadata {
-		(*b.Metadata)[v] = ""
-	}
+	return
 }
 
 //AddTag adds tag to bookmark. No duplicates are removed

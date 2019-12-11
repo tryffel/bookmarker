@@ -157,11 +157,8 @@ func NewMetadata(doneFunc func(save bool, bookmark *models.Bookmark) bool) *Meta
 }
 
 func (m *Metadata) setData(bookmark *models.Bookmark) {
-	bookmark.FillDefaultMetadata()
 	m.bookmark = bookmark
 	m.form.Clear(true)
-	//m.customFields = &map[string]*tview.InputField{}
-	//m.customKeys = bookmark.MetadataKeys
 	m.initDefaults()
 	m.setFields(m.bookmark)
 	m.initCustomFields()
