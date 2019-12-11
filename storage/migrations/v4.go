@@ -69,4 +69,13 @@ CREATE TRIGGER delete_bookmark_fts
         WHERE id = old.id;
 END;
 
+-- fill bookmark_fts with current bookmarks
+INSERT INTO bookmark_fts(id, name, description,content,project)
+SELECT
+    id, name, description, content, project
+FROM bookmarks;
+
+-- fill description_lower row
+UPDATE bookmarks SET
+description_lower = LOWER(description) WHERE true;
 `
