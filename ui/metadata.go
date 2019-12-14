@@ -259,11 +259,8 @@ func (m *Metadata) save() {
 		m.tmpBookmark.Tags = strings.Split(tags, ",")
 	}
 
-	for _, key := range *m.customKeys {
-		item, ok := (*m.customFields)[key]
-		if ok {
-			(*m.tmpBookmark.Metadata)[key] = item.GetText()
-		}
+	for key, item := range *m.customFields {
+		(*m.tmpBookmark.Metadata)[key] = item.GetText()
 	}
 
 	ok := m.doneFunc(true, m.tmpBookmark)
