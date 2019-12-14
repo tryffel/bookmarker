@@ -58,11 +58,25 @@ func (b *BookmarkTable) InputHandler() func(event *tcell.EventKey, setFocus func
 				bookmark := b.items[index-1]
 				b.deleteFunc(bookmark)
 			}
-
+		} else if event.Rune() == 'n' {
+			b.moveCursor(10)
+		} else if event.Rune() == 'm' {
+			b.moveCursor(-10)
 		} else {
 			b.table.InputHandler()(event, setFocus)
 		}
 	}
+}
+
+func (b *BookmarkTable) moveCursor(n int) {
+	index, col := b.table.GetSelection()
+	result := index + n
+	if result >= len(b.items) {
+		result = len(b.items) - 1
+	} else if result <= 0 {
+		result = 1
+	}
+	b.table.Select(result, col)
 }
 
 func (b *BookmarkTable) Focus(delegate func(p tview.Primitive)) {
@@ -100,6 +114,9 @@ func (b *BookmarkTable) SetData(data []*models.Bookmark) {
 
 		b.table.AddRow(i, row...)
 	}
+	//if len(b.items) > 0 {
+	//b.table.Select(1, 0)
+	//}
 }
 
 func (b *BookmarkTable) ResetCursor() {
