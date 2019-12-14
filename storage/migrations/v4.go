@@ -75,6 +75,29 @@ SELECT
     id, name, description, content, project
 FROM bookmarks;
 
+-- triggers to keep fts updated
+CREATE TRIGGER create_metadata_fts
+    AFTER INSERT ON metadata BEGIN
+    INSERT INTO metadata_fts(id, key, value)
+    VALUES (new.bookmark, new.key, new.value);
+END;
+
+CREATE TRIGGER update_metadata_fts
+    AFTER UPDATE ON metadata BEGIN
+    UPDATE metadata_fts SET
+    	id = new.bookmark,
+        key = new.key,
+        value = new.value
+    WHERE id = old.bookmark AND key = old.key;
+END;
+
+CREATE TRIGGER delete_metadata_fts
+    AFTER DELETE ON metadata BEGIN
+    DELETE FROM metadata_fts
+    WHERE id = old.bookmark;
+END;
+
+
 -- fill description_lower row
 UPDATE bookmarks SET
 description_lower = LOWER(description) WHERE true;
