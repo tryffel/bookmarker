@@ -30,17 +30,16 @@ author:dave language:english -link:mypage.com -> author & language must match, l
 ```
 
 # Building
-Assuming go already installed, run
+Assuming go already installed, download package and build it.
+**You must add build tag 'fts5'** before running application For database schema to be built properly and full-text-search to work. You can always revert the migration (by hand, at the moment) or delete the database file if it's still empty.
 ```
 go get -u tryffel.net/go/bookmarker
-# run
-GOPATH/bin/bookmarker
+
+# cd to bookmarker-root
+go build --tags 'fts5' .
 ```
 
-If you wish to enable full text search capability, you need to give following flag during compilation:
-```
-go build --tags 'fts5'
-```
+During first run, Bookmarker will create a default config directory to ~/.config/bookmarker. This includes config file 'bookmarker.toml', database and log file. 
 
 Config file can be set with ```--config``` flag. This will create new file and directories, if they don't exist. 
 Usage:
