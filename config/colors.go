@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	colorBackground      = tcell.Color237
+	colorBackground      = tcell.Color235
 	colorModalbackground = tcell.Color239
 	colorBackgroundLight = tcell.Color239
 	colorText            = tcell.Color23
@@ -206,7 +206,7 @@ type ColorMetadata struct {
 
 func defaultColorMetadata() ColorMetadata {
 	return ColorMetadata{
-		Background:         colorBackground,
+		Background:         tcell.Color236,
 		BackgroundEditable: tcell.Color235,
 		Label:              tcell.Color252,
 		Text:               tcell.Color187,
