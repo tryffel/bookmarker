@@ -104,7 +104,7 @@ func (w *Window) inputCapture(event *tcell.EventKey) *tcell.EventKey {
 
 			stats, err := w.db.GetStatistics()
 			if err != nil {
-				logrus.Errorf("Get statistics: &v", err)
+				logrus.Errorf("Get statistics: %v", err)
 			}
 
 			w.addModal(w.help, twidgets.ModalSizeMedium)
@@ -343,7 +343,7 @@ func (w *Window) openMetadata() {
 }
 
 func (w *Window) createBookmark(bookmark *models.Bookmark) {
-	logrus.Debugf("Create new bookmark: ", bookmark)
+	logrus.Debugf("Create new bookmark: %v", bookmark)
 
 	err := w.db.NewBookmark(bookmark)
 	if err != nil {
@@ -410,7 +410,7 @@ func (w *Window) FilterByProject(project *models.Project) {
 	if project == nil {
 		bookmarks, err := w.db.GetAllBookmarks()
 		if err != nil {
-			logrus.Error("Get all bookmarks: %v", err)
+			logrus.Errorf("Get all bookmarks: %v", err)
 		} else {
 			w.bookmarks.SetData(bookmarks)
 			w.bookmarks.ResetCursor()
@@ -430,7 +430,7 @@ func (w *Window) FilterByProject(project *models.Project) {
 		bookmarks, err := w.db.FilterBookmarks(filt)
 		if err != nil {
 
-			logrus.Error("Get bookmarks by project: %v", err)
+			logrus.Errorf("Get bookmarks by project: %v", err)
 		} else {
 			w.bookmarks.SetData(bookmarks)
 			w.bookmarks.ResetCursor()
@@ -474,7 +474,7 @@ func (w *Window) doImport(data *modals.ImportData) {
 			err = w.db.NewBookmarks(bookmarks, data.Tags)
 			took := time.Since(start)
 			if err != nil {
-				logrus.Error("Batch import and create bookmarks: %v", err)
+				logrus.Errorf("Batch import and create bookmarks: %v", err)
 				msg = fmt.Errorf("save new bookmarks: %v", err).Error()
 			} else {
 				logrus.Infof("Imported %d bookmarks in %d ms", len(bookmarks), took.Milliseconds())

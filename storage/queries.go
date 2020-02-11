@@ -857,7 +857,7 @@ LIMIT ?;`
 		var val string
 		err = rows.Scan(&val)
 		if err != nil {
-			logrus.Error("Scan value: %v", err)
+			logrus.Errorf("Scan value: %v", err)
 			err = rows.Close()
 			break
 		}

@@ -115,7 +115,7 @@ func main() {
 
 	err = migrations.Migrate(db.Engine(), migrations.BookmarkerMigrations)
 	if err != nil {
-		logrus.Fatal("database migrations failed: %v", err)
+		logrus.Fatalf("database migrations failed: %v", err)
 		os.Exit(1)
 	}
 	logrus.SetOutput(file)
