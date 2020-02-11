@@ -1,39 +1,44 @@
 # Bookmarker
-Bookmarker is a terminal application to manage and view bookmarks. It is under development and not stable yet.
+![](https://goreportcard.com/badge/tryffel.net/go/bookmarker)
+
+Bookmarker is a terminal application to manage and view bookmarks. It is still under development and might contain bugs.
+
+# Known bugs
+* Tags don't work as expected
 
 # Features
 * Assign any key-value metadata (currently editable in config file) 
-* Advanced searching. Search can be simple like 'bookmark', or more advanced: 'author:davis project:study link:archives.com'
-* Store IPFS links directly with corresponding bookmark
-* Import existing bookmarks (no exporting yet)
+* Advanced searching. Search can be simple like 'bookmark*', or more advanced: 'author:davis project:study link:archives.com'
+* Store IPFS & web archive links directly with corresponding bookmark
+* Import existing bookmarks from bookmarks.html-browser-exports (no exporting yet)
 * Customize color scheme
 * Archived status 
 * Sort bookmarks
 
 # Searching & filtering
-If built with support for sqlite fts5 extension, bookmarker supports full text search queries. Full text queries 
-currently cover bookmark name, description, project & link content. 
+At the moment Bookmarker applies either full text query or filtering. Full-text-queries apply to any metadata keys and values.
 Some examples of full text queries that are supported:
 ```
-'help page' -> match any phrase that has words help and page
-"help page" -> match any phrase that has phrase "help page"
-'help pag*' -> match any phrase that has help and pag*, where * is wildcard
-'help AND page OR site'
-'^help' -> phrase must start with help
+# Full-text-query
+help page       -> match any phrase that has words help and page
+"help page"     -> match any phrase that has phrase "help page"
+help pag*       -> match any phrase that has help and pag*, where * is wildcard
+help AND page OR site -> logical combining
+'^help'         -> phrase must start with help
+
+# Filtering
+link:github.com                 -> only bookmarks urls with text github.com
+project:test link:github.com    -> must contain both clauses
+author:"dave" language:english -link:mypage.com -> author must match language must contain, link cannot contain given text
 ```
 
-for more info see [Sqlite FTS5 extension](https://www.sqlite.org/fts5.html)
-
-Filtering narrows down results with simple key-value pairs:
-```
-author:dave language:english -link:mypage.com -> author & language must match, link cannot contain given
-```
+for more info on full text search syntax see [Sqlite FTS5 extension](https://www.sqlite.org/fts5.html).
 
 # Building
 Assuming go already installed, download package and build it.
-**You must add build tag 'fts5'** before running application For database schema to be built properly and full-text-search to work. You can always revert the migration (by hand, at the moment) or delete the database file if it's still empty.
+**You must add build tag 'fts5'** before running application for database schema to be built properly and full-text-search to work. You can always revert the migration (by hand, at the moment) or delete the database file if it's still empty.
 ```
-go get -u tryffel.net/go/bookmarker
+go get tryffel.net/go/bookmarker
 
 # cd to bookmarker-root
 go build --tags 'fts5' .
