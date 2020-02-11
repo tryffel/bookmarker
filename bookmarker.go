@@ -100,6 +100,16 @@ func main() {
 	models.DefaulMetadata = append(models.DefaulMetadata, conf.DefaultMetadata...)
 	ui.CustomMetadataFields = conf.DefaultMetadata
 
+	// ensure full-text-search module is enabled before doing migrations. Without extension migrations will fail
+	fts, err := db.FullTextSearchSupported()
+	if err != nil {
+		logrus.Fatalf("get enabled db-modules: %v", err)
+	}
+
+	if !fts {
+		logrus.Fatalf("Sqlite full-text-search (fts5) is not enabled, refusing to start. ")
+	}
+
 	err = migrations.Migrate(db.Engine(), migrations.BookmarkerMigrations)
 	if err != nil {
 		logrus.Fatal("database migrations failed: %v", err)
