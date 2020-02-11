@@ -65,14 +65,19 @@ func NewModify(modifyFunc func(filter *storage.Filter, modifier *storage.Modifie
 	m.SetFieldBackgroundColor(colors.TextBackground)
 	m.SetFieldTextColor(colors.Text)
 
+	warning := tview.NewInputField().SetLabel("[::u]Warning[::-]").
+		SetText("This is experimental feature. Use at your own risk (backup database file first)")
+	//disable edits
+	warning.SetAcceptanceFunc(func(string, rune) bool { return false })
+	warning.SetBackgroundColor(config.Configuration.Colors.ModalBackground)
+	m.AddFormItem(warning)
+
 	m.AddFormItem(m.filter)
 	m.AddFormItem(m.key)
 	m.AddFormItem(m.value)
 	m.AddFormItem(m.status)
 
-	m.AddButton("Save", m.save)
-	m.AddButton("Cancel", m.cancel)
-
+	m.AddButton("Execute", m.save)
 	return m
 }
 
@@ -97,11 +102,5 @@ func (m *Modify) save() {
 		} else {
 			m.status.SetText(fmt.Errorf("Error: %v", err).Error())
 		}
-	}
-}
-
-func (m *Modify) cancel() {
-	if m.modifyFunc != nil {
-		_, _ = m.modifyFunc(nil, nil)
 	}
 }
