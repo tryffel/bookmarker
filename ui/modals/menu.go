@@ -53,7 +53,7 @@ func NewMenu() *Menu {
 	m.SetSelectedBackgroundColor(colors.TextSelected)
 
 	m.AddItem("Import bookmarks", "Import from bookmarks.html file", 'i', m.doImport)
-	m.AddItem("Export bookmarks", "Export into bookmarks.html file", 'e', m.doExport)
+	m.AddItem("Export bookmarks (not implemented)", "Export into bookmarks.html file", 'e', m.doExport)
 	m.AddItem("Bulk Modify", "Modify multiple bookmarks with given filter", 'm', m.doModify)
 
 	return m
