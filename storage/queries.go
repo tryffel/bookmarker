@@ -254,14 +254,16 @@ VALUES (?,?,?,?,?,?,?,?,?); SELECT last_insert_rowid() FROM bookmarks`
 //NewBookmarks creates batch of new bookmarks. Bookmark ids are not collected and need to be queried separately
 // AddTags allows defining any custom tags that are assigned to all bookmarks
 func (d *Database) NewBookmarks(bookmarks []*models.Bookmark, AddTags []string) error {
-	//Max variables for sqlite is 999, batch of 100 = 700 vars
+	//Max variables for sqlite is 999, batch of 100 = 900 vars
+
+	numArgs := 9
 	batchSize := 100
 	total := len(bookmarks)
 	imported := 0
 
 	// Get last id
 	id := 0
-	rows, err := d.conn.Query("SELECT max(id) FROM main.bookmarks;")
+	rows, err := d.conn.Query("SELECT coalesce(max(id),1) FROM main.bookmarks;")
 	if err != nil {
 		return fmt.Errorf("failed to query last id: %v", err)
 	}
@@ -270,7 +272,8 @@ func (d *Database) NewBookmarks(bookmarks []*models.Bookmark, AddTags []string) 
 
 	rows.Next()
 	err = rows.Scan(&id)
-	defer rows.Close()
+	rows.Close()
+
 	if err != nil {
 		return fmt.Errorf("failed to scan last id: %v", err)
 	}
@@ -294,11 +297,12 @@ func (d *Database) NewBookmarks(bookmarks []*models.Bookmark, AddTags []string) 
 
 		query := `
 		INSERT INTO 
-		bookmarks (name, lower_name, description, description_lower, content, project, created_at, updated_at) 
+		bookmarks (name, lower_name, description, description_lower, content, 
+		           project, created_at, updated_at, archived) 
 		VALUES `
 
-		argList := "(?,?,?,?,?,?,?,?)"
-		args := make([]interface{}, len(batch)*7)
+		argList := "(?,?,?,?,?,?,?,?,?)"
+		args := make([]interface{}, len(batch)*numArgs)
 
 		// Parse each bookmark, put tags to map, put bookmark to args list
 		for i, v := range batch {
@@ -322,14 +326,15 @@ func (d *Database) NewBookmarks(bookmarks []*models.Bookmark, AddTags []string) 
 			if len(AddTags) > 0 {
 				v.AddTags(AddTags)
 			}
-			args[7*i] = v.Name
-			args[7*i+1] = v.LowerName
-			args[7*i+2] = v.Description
-			args[7*i+3] = strings.ToLower(v.Description)
-			args[7*i+4] = v.Content
-			args[7*i+5] = v.Project
-			args[7*i+6] = v.CreatedAt
-			args[7*i+7] = v.UpdatedAt
+			args[numArgs*i] = v.Name
+			args[numArgs*i+1] = v.LowerName
+			args[numArgs*i+2] = v.Description
+			args[numArgs*i+3] = strings.ToLower(v.Description)
+			args[numArgs*i+4] = v.Content
+			args[numArgs*i+5] = v.Project
+			args[numArgs*i+6] = v.CreatedAt
+			args[numArgs*i+7] = v.UpdatedAt
+			args[numArgs*i+8] = v.Archived
 
 			if len(v.Tags) > 0 {
 				for _, t := range v.Tags {
@@ -355,30 +360,33 @@ func (d *Database) NewBookmarks(bookmarks []*models.Bookmark, AddTags []string) 
 		}
 	}
 
-	//Tags
-	tags := make([]string, len(tagsMap))
-	i := 0
-	for key, _ := range tagsMap {
-		tags[i] = key
-		i += 1
-	}
-	err = d.InsertTags(tags, tx)
+	/*
+		//Tags
+		tags := make([]string, len(tagsMap))
+		i := 0
+		for key, _ := range tagsMap {
+			tags[i] = key
+			i += 1
+		}
+		err = d.InsertTags(tags, tx)
 
-	if err != nil {
-		_ = tx.Rollback()
-		return fmt.Errorf("insert tags: %v", err)
-	}
+		if err != nil {
+			_ = tx.Rollback()
+			return fmt.Errorf("insert tags: %v", err)
+		}
 
-	//Tags bookmarks relations
-	//Add tags one bookmark at a time for now
-	for _, v := range bookmarks {
-		if len(v.Tags) > 0 {
-			err = d.UpdateBookmarkTags(v, v.Tags, tx)
-			if err != nil {
-				break
+		//Tags bookmarks relations
+		//Add tags one bookmark at a time for now
+		for _, v := range bookmarks {
+			if len(v.Tags) > 0 {
+				err = d.UpdateBookmarkTags(v, v.Tags, tx)
+				if err != nil {
+					break
+				}
 			}
 		}
-	}
+
+	*/
 
 	if err != nil {
 		_ = tx.Rollback()
