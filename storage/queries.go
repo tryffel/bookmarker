@@ -63,6 +63,8 @@ func (q *query) log(err error) {
 	}
 }
 
+//GetAllBookmarks returns all bookmarks filtered by their name.
+// cnofig.HideArchived is obeyd and limit is 500
 func (d *Database) GetAllBookmarks() ([]*models.Bookmark, error) {
 	query := `
 SELECT
@@ -169,6 +171,7 @@ FROM bookmarks `
 	return projects, nil
 }
 
+//GetAllTags returns all tags
 func (d *Database) GetAllTags() (*map[string]int, error) {
 	query := `
 SELECT
@@ -207,6 +210,7 @@ ORDER BY tags.name ASC;
 	return results, nil
 }
 
+//NewBookmark stores new bookmark
 func (d *Database) NewBookmark(b *models.Bookmark) error {
 	query := `
 INSERT INTO 
@@ -389,6 +393,7 @@ func (d *Database) NewBookmarks(bookmarks []*models.Bookmark, AddTags []string) 
 	return nil
 }
 
+//GetBookmarkMetadata gets metadata related to bookmark
 func (d *Database) GetBookmarkMetadata(bookmark *models.Bookmark) error {
 	query := `
 SELECT key, value FROM 
@@ -421,6 +426,7 @@ ORDER BY metadata.bookmark ASC,
 	return nil
 }
 
+//GetBookmark returns single bookmark
 func (d *Database) GetBookmark(id int) (*models.Bookmark, error) {
 	query := `
 SELECT
@@ -580,6 +586,7 @@ GROUP BY id`
 	return bookmarks, nil
 }
 
+//UpdateBookmark updates all fields on bookmark
 func (d *Database) UpdateBookmark(b *models.Bookmark) error {
 	query := `
 UPDATE bookmarks SEt
@@ -647,6 +654,7 @@ WHERE bookmark = ?
 	return nil
 }
 
+//InsertTag inserts tag for bookmark
 func (d *Database) InsertTags(tags []string, tx *sqlx.Tx) error {
 	query := "INSERT INTO tags (name) VALUES "
 
@@ -710,6 +718,7 @@ func (d *Database) RenameProject(old string, new string) error {
 
 }
 
+//DeleteBookmark deletes bookmark and its metadata
 func (d *Database) DeleteBookmark(bookmark *models.Bookmark) error {
 	query := `
 DELETE FROM bookmarks
@@ -719,6 +728,7 @@ WHERE bookmarks.id = ?`
 	return err
 }
 
+//GetStatistics gets various stats related to stored bookmarks
 func (d *Database) GetStatistics() (*Statistics, error) {
 	s := &Statistics{}
 
@@ -766,6 +776,7 @@ LIMIT 1
 	return s, err
 }
 
+//FilterBookmarks applies given filter to return matching bookmarks
 func (d *Database) FilterBookmarks(filter *Filter) ([]*models.Bookmark, error) {
 	query, params, err := filter.bookmarksQuery()
 	if err != nil {
@@ -923,6 +934,7 @@ func (d *Database) FilterProject(filter *Filter) ([]*models.Project, error) {
 	return projects, nil
 }
 
+//FullTextSearchSupported returns whether sqlite FTS5-module is enabled
 func (d *Database) FullTextSearchSupported() (bool, error) {
 	query := `
 pragma compile_options`
@@ -951,6 +963,7 @@ pragma compile_options`
 	return fts, err
 }
 
+//GetMetadataKeys returns all known metadata keys
 func (d *Database) GetMetadataKeys() ([]string, error) {
 	query := `
 SELECT key
