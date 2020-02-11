@@ -632,17 +632,18 @@ WHERE bookmark = ?
 `
 
 	logger := beginQuery(query, "update/insert bookmark metadata")
+	var err error
 
 	for key, value := range *b.Metadata {
 		keyLower := strings.ToLower(key)
 		valueLower := strings.ToLower(value)
 
-		_, err := d.conn.Exec(query, b.Id, key, keyLower, value, valueLower, value, valueLower, b.Id)
+		_, err = d.conn.Exec(query, b.Id, key, keyLower, value, valueLower, value, valueLower, b.Id)
 		if err != nil {
 			logrus.Errorf("Failed to insert/update metadata: %v", err)
 		}
 	}
-	logger.log(nil)
+	logger.log(err)
 	return nil
 }
 
