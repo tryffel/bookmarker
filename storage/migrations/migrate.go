@@ -47,6 +47,11 @@ var BookmarkerMigrations = []Migrator{
 		Level:  4,
 		Schema: v4,
 	},
+	&Migration{
+		Name:   "fix metadata primary key",
+		Level:  5,
+		Schema: v5,
+	},
 }
 
 type Schema struct {
