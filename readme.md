@@ -32,7 +32,7 @@ project:test link:github.com    -> must contain both clauses
 author:"dave" language:english -link:mypage.com -> author must match language must contain, link cannot contain given text
 ```
 
-for more info on full text search syntax see [Sqlite FTS5 extension](https://www.sqlite.org/fts5.html).
+for more info on full text search syntax see [Sqlite FTS5 extension](https://www.sqlite.org/fts5.html#full_text_query_syntax).
 
 # Building
 Assuming go already installed, download package and build it.
