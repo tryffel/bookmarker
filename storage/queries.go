@@ -735,7 +735,7 @@ func (d *Database) GetStatistics() (*Statistics, error) {
 	query := `
 	SELECT
 		COUNT(DISTINCT(b.id)) AS bookmarks,
-		(SELECT id FROM bookmarks WHERE archived=true) AS archived,
+		(SELECT count(id) FROM bookmarks WHERE archived=true) AS archived,
 		COUNT(DISTINCT(t.id)) AS tags,
 		COUNT(DISTINCT(b.project)) AS projects
 	FROM bookmarks b,
