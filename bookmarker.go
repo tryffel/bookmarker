@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"github.com/sirupsen/logrus"
 	prefixed "github.com/x-cray/logrus-prefixed-formatter"
+	"io"
 	"os"
 	"sync"
 	"tryffel.net/go/bookmarker/config"
@@ -84,16 +85,18 @@ func main() {
 		logrus.Error("failed to open log file: ", err.Error())
 	}
 
-	logrus.SetOutput(file)
+	// put log output to both log file and stdout
+	mw := io.MultiWriter(os.Stdout, file)
 
+	logrus.SetOutput(file)
 	logrus.Infof("############ %s v%s ############", config.AppName, config.Version)
 	logrus.SetLevel(level)
+	logrus.SetOutput(mw)
 
 	db, err := storage.NewDatabase(conf.DbFile())
 	defer db.Close()
 	if err != nil {
-		logrus.Errorf("database connection failed: %v", err)
-		os.Exit(1)
+		logrus.Fatalf("database connection failed: %v", err)
 	}
 
 	// Register user defined metadata
@@ -115,6 +118,7 @@ func main() {
 		logrus.Fatal("database migrations failed: %v", err)
 		os.Exit(1)
 	}
+	logrus.SetOutput(file)
 
 	app := ui.NewWindow(conf.Colors, &conf.Shortcuts, db)
 	err = app.Run()
