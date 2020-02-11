@@ -59,7 +59,7 @@ func (a *ApplicationConfig) ConfigDir() string {
 //Default configuration which config file overwrites
 func defaultConfig() *ApplicationConfig {
 	conf := &ApplicationConfig{
-		LogLevel:               "debug",
+		LogLevel:               "info",
 		HideArchived:           true,
 		DefaultMetadata:        []string{"Author", "Published At", "Language", "Ipfs", "Class", "Title"},
 		AutoComplete:           true,
