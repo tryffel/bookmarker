@@ -734,12 +734,10 @@ func (d *Database) GetStatistics() (*Statistics, error) {
 
 	query := `
 	SELECT
-		COUNT(DISTINCT(b.id)) AS bookmarks,
+		COUNT(b.id) AS bookmarks,
 		(SELECT count(id) FROM bookmarks WHERE archived=true) AS archived,
-		COUNT(DISTINCT(t.id)) AS tags,
 		COUNT(DISTINCT(b.project)) AS projects
-	FROM bookmarks b,
-		tags t`
+	FROM bookmarks b`
 
 	rows, err := d.conn.Query(query)
 	if err != nil {
@@ -751,7 +749,7 @@ func (d *Database) GetStatistics() (*Statistics, error) {
 	}
 
 	rows.Next()
-	err = rows.Scan(&s.Bookmarks, &s.Archived, &s.Tags, &s.Projects)
+	err = rows.Scan(&s.Bookmarks, &s.Archived, &s.Projects)
 	if err != nil {
 		return s, err
 	}
