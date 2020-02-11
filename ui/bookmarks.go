@@ -114,9 +114,9 @@ func (b *BookmarkTable) SetData(data []*models.Bookmark) {
 
 		b.table.AddRow(i, row...)
 	}
-	//if len(b.items) > 0 {
-	//b.table.Select(1, 0)
-	//}
+	if len(b.items) > 0 {
+		b.table.Select(1, 0)
+	}
 }
 
 func (b *BookmarkTable) ResetCursor() {
