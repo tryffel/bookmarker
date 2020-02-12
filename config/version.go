@@ -22,5 +22,5 @@ package config
 const (
 	AppName      = "Bookmarker"
 	AppNameLower = "bookmarker"
-	Version      = "0.0.1"
+	Version      = "0.1.0"
 )
