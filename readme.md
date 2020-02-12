@@ -1,6 +1,8 @@
 # Bookmarker
 ![](https://goreportcard.com/badge/tryffel.net/go/bookmarker)
 
+![](screenshot.png)
+
 Bookmarker is a terminal application to manage and view bookmarks. It is still under development and might contain bugs.
 
 # Known bugs
