@@ -3,7 +3,7 @@
 
 ![](screenshot.png)
 
-Bookmarker is a terminal application to manage and view bookmarks. It is still under development and might contain bugs.
+Bookmarker is a terminal application to manage and view bookmarks. 
 
 # Known bugs
 * Tags don't work as expected
