@@ -46,6 +46,15 @@ go get tryffel.net/go/bookmarker
 go build --tags 'fts5' .
 ```
 
+Cross-compile to windows using e.g. docker image x1unix/go-mingw (1.16):
+```
+GOOS=windows GOARCH=amd64 go build --tags 'fts5' .
+```
+
+Bookmarker works on Windows too, but might is not optimized for Windows environment.  
+This occurs mostly as a visual effect of poor layouts and colors.
+
+# Config
 During first run, Bookmarker will create a default config directory to ~/.config/bookmarker. This includes config file 'bookmarker.toml', database and log file. 
 
 Config file can be set with ```--config``` flag. This will create new file and directories, if they don't exist. 
