@@ -28,6 +28,7 @@ type ApplicationConfig struct {
 	HideArchived           bool     `toml:"default_hide_archived"`
 	DefaultMetadata        []string `toml:"default_metadata_fields"`
 	DataBase               string   `toml:"database_file"`
+	Bleve                  string   `toml:"bleve_dir"`
 	Log                    string   `toml:"log_file"`
 	AutoComplete           bool     `toml:"autocomplete"`
 	AutoCompleteMaxResults int      `toml:"autocomplete_max_results"`

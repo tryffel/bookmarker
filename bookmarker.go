@@ -40,7 +40,13 @@ func main() {
 		"for data also. This can be configured from config file.")
 
 	version := flag.Bool("version", false, "Print version info")
+	indexFts := flag.Bool("index", false, "Index FTS")
+
 	flag.Parse()
+
+	if *indexFts {
+		logrus.Info("Index full-text-search content")
+	}
 
 	if *version {
 		fmt.Printf("%s v%s\n", config.AppName, config.Version)
@@ -93,7 +99,7 @@ func main() {
 	logrus.SetLevel(level)
 	logrus.SetOutput(mw)
 
-	db, err := storage.NewDatabase(conf.DbFile())
+	db, err := storage.NewDatabase(conf.DbFile(), conf.Bleve)
 	defer db.Close()
 	if err != nil {
 		logrus.Fatalf("database connection failed: %v", err)
@@ -113,18 +119,27 @@ func main() {
 		logrus.Fatalf("Sqlite full-text-search (fts5) is not enabled, refusing to start. ")
 	}
 
-	err = migrations.Migrate(db.Engine(), migrations.BookmarkerMigrations)
-	if err != nil {
-		logrus.Fatalf("database migrations failed: %v", err)
-		os.Exit(1)
-	}
-	logrus.SetOutput(file)
+	if *indexFts {
+		err := db.IndexFts()
+		if err != nil {
+			logrus.Error(err)
+			os.Exit(1)
+		}
+	} else {
 
-	app := ui.NewWindow(conf.Colors, &conf.Shortcuts, db)
-	err = app.Run()
-	if err != nil {
-		fmt.Printf("Failed to open gui: %v", err)
-		os.Exit(1)
+		err = migrations.Migrate(db.Engine(), migrations.BookmarkerMigrations)
+		if err != nil {
+			logrus.Fatalf("database migrations failed: %v", err)
+			os.Exit(1)
+		}
+		logrus.SetOutput(file)
+
+		app := ui.NewWindow(conf.Colors, &conf.Shortcuts, db)
+		err = app.Run()
+		if err != nil {
+			fmt.Printf("Failed to open gui: %v", err)
+			os.Exit(1)
+		}
 	}
 
 }

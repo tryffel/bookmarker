@@ -22,8 +22,10 @@ package storage
 import (
 	"database/sql"
 	"fmt"
+	"github.com/blevesearch/bleve/v2"
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
+	"strconv"
 	"strings"
 	"time"
 	"tryffel.net/go/bookmarker/config"
@@ -471,125 +473,59 @@ LIMIT 1`
 
 //SearchBookmarks searches both bookmarks table and additional metadata fields
 // If full text search is enabled, combine those results as well
-func (d *Database) SearchBookmarks(text string) ([]*models.Bookmark, error) {
+func (d *Database) SearchBookmarks(text string, isTermQuery bool) ([]*models.Bookmark, error) {
 
-	plainQuery := `
--- metadata
-SELECT * FROM 
-(
-	SELECT
-    	b.id AS id,
-    	b.name AS name,
-    	b.description AS description,
-    	b.content AS content,
-    	b.project AS project,
-    	b.created_at AS created_at,
-    	b.updated_at AS updated_at,
-    	b.archived AS archived,
-       	-- skip tags for now
-    	'' as tags
-	FROM bookmarks b
-         LEFT outer JOIN metadata m on b.id = m.bookmark
-	WHERE m.value_lower like ?
-	UNION
-	-- bookmarks with tags
-	SELECT
-		b.id as id,
-		b.name AS name,
-		b.description AS description,
-		b.content as content,
-		b.project AS project,
-		b.created_at AS created_at,
-		b.updated_at AS updated_at,
-		b.archived AS archived,
-		GROUP_CONCAT(t.name) AS tags
-	FROM bookmarks b
-		LEFT JOIN bookmark_tags bt ON b.id = bt.bookmark
-		LEFT JOIN tags t ON bt.tag = t.id
-	WHERE b.lower_name LIKE ?
-		OR b.description_lower LIKE ?
-		OR b.content LIKE ?
-		OR b.project LIKE ?
-		OR t.name LIKE ?
-) AS a
-GROUP BY a.id
-ORDER BY a.name ASC
-LIMIT 300;
-`
+	getString := func(data interface{}, defaultval string) string {
+		isStr, ok := data.(string)
+		if ok {
+			return isStr
+		}
+		return defaultval
+	}
 
-	ftsQuery := `
-SELECT
-id, name, description, content,
-       project, created_at, updated_at, archived, tags
-FROM (
--- bookmarks fts
-SELECT
-	b.id AS id,
-    HIGHLIGHT(bookmark_fts, 1, '[yellow::u]', '[#dadada::-]') name,
-	HIGHLIGHT(bookmark_fts, 2, '[yellow::u]', '[#dadada::-]') description,
-    b.content as content,
-    HIGHLIGHT(bookmark_fts, 4, '[yellow::u]', '[#dadada::-]') project,
-    b.created_at AS created_at,
-    b.updated_at AS updated_at,
-    b.archived AS archived,
-    '' as tags
-FROM bookmark_fts
-JOIN bookmarks b ON bookmark_fts.id = b.id
-WHERE bookmark_fts MATCH '' || ? || ''
--- metadata fts
-UNION
-SELECT
-    b.id AS id,
-    b.name AS name,
-    b.description AS description,
-    b.content AS content,
-    b.project AS project,
-    b.created_at AS created_at,
-    b.updated_at AS updated_at,
-    b.archived as archived,
-    -- skip tags for now
-    '' AS tags
-FROM bookmarks b
-WHERE b.id IN (
-    SELECT
-        id
-    FROM metadata_fts 
-    WHERE metadata_fts MATCH '' || ? || ''
-ORDER BY rank DESC))
-GROUP BY id`
+	getBool := func(data interface{}, defaultval bool) bool {
+		isbool, ok := data.(bool)
+		if ok {
+			return isbool
+		}
+		return defaultval
+	}
 
-	var err error
-	var rows *sql.Rows
-	if config.Configuration.EnableFullTextSearch {
-		//text = "'" + text + "'"
-		rows, err = d.conn.Query(ftsQuery, text, text)
+	var req *bleve.SearchRequest
+
+	if !isTermQuery {
+		query := bleve.NewQueryStringQuery(text)
+		req = bleve.NewSearchRequest(query)
 	} else {
-		text = "%" + text + "%"
-		rows, err = d.conn.Query(plainQuery, text, text, text, text, text, text, text)
-
+		q := fmt.Sprintf("name:%s description:%s project:%s link:%s", text, text, text, text)
+		query := bleve.NewQueryStringQuery(q)
+		req = bleve.NewSearchRequest(query)
 	}
+	req.Fields = []string{"id", "name", "description", "content", "project", "created_at", "updated_at", "archived",
+		"tags", "metadata"}
+	results, err := d.bleve.Search(req)
+
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("bleve: %v", err)
 	}
 
-	bookmarks := []*models.Bookmark{}
+	bookmarks := make([]*models.Bookmark, results.Total)
 
-	for rows.Next() {
-		var tag sql.NullString
-		b := models.Bookmark{}
-
-		err := rows.Scan(&b.Id, &b.Name, &b.Description, &b.Content, &b.Project, &b.CreatedAt, &b.UpdatedAt, &b.Archived, &tag)
+	for i, v := range results.Hits {
+		bookmark := &models.Bookmark{}
+		id, err := strconv.Atoi(v.ID)
 		if err != nil {
-			logrus.Errorf("scan bookmark rows: %v", err)
-			err = rows.Close()
-			break
+			logrus.Warningf("bleve returned non int-id: %v", v.ID)
+		} else {
+			bookmark.Id = id
 		}
 
-		if tag.String != "" {
-			b.Tags = strings.Split(tag.String, ",")
-		}
-
-		bookmarks = append(bookmarks, &b)
+		bookmark.Name = getString(v.Fields["name"], "")
+		bookmark.Description = getString(v.Fields["description"], "")
+		bookmark.Content = getString(v.Fields["content"], "")
+		bookmark.Project = getString(v.Fields["project"], "")
+		bookmark.Archived = getBool(v.Fields["archived"], false)
+		bookmarks[i] = bookmark
 	}
 	return bookmarks, nil
 }
@@ -942,31 +878,7 @@ func (d *Database) FilterProject(filter *Filter) ([]*models.Project, error) {
 
 //FullTextSearchSupported returns whether sqlite FTS5-module is enabled
 func (d *Database) FullTextSearchSupported() (bool, error) {
-	query := `
-pragma compile_options`
-
-	rows, err := d.conn.Query(query)
-	if err != nil {
-		return false, err
-	}
-
-	fts := false
-	for rows.Next() {
-		var val string
-		err = rows.Scan(&val)
-		if err != nil {
-			rows.Close()
-			logrus.Errorf("error scanning pragmas: %v", err)
-			break
-		}
-
-		if val == "ENABLE_FTS5" {
-			fts = true
-			rows.Close()
-			break
-		}
-	}
-	return fts, err
+	return true, nil
 }
 
 //GetMetadataKeys returns all known metadata keys

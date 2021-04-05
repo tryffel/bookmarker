@@ -376,25 +376,13 @@ func (w *Window) Search(text string) {
 			return
 		}
 	}
-	if w.filter.IsPlainQuery() {
-		bookmarks, err := w.db.SearchBookmarks(text)
-		if err != nil {
-			logrus.Errorf("Search bookmarks: %v", err)
-			return
-		}
-		w.bookmarks.SetData(bookmarks)
-		w.bookmarks.ResetCursor()
-		//w.refreshProjects()
-	} else {
-		bookmarks, err := w.db.FilterBookmarks(w.filter)
-		if err != nil {
-			logrus.Errorf("Search bookmarks: %v", err)
-			return
-		}
-		w.bookmarks.SetData(bookmarks)
-		w.bookmarks.ResetCursor()
-		w.refreshProjects()
+	bookmarks, err := w.db.SearchBookmarks(text, w.filter.IsPlainQuery())
+	if err != nil {
+		logrus.Errorf("Search bookmarks: %v", err)
+		return
 	}
+	w.bookmarks.SetData(bookmarks)
+	w.bookmarks.ResetCursor()
 }
 
 func (w *Window) refreshProjects() {

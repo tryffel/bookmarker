@@ -32,21 +32,25 @@ var DefaulMetadata = []string{
 }
 
 type Bookmark struct {
-	Id          int
-	Name        string
-	LowerName   string
-	Description string
-	Content     string
-	Project     string
+	Id          int       `json:"id"`
+	Name        string    `json:"name"`
+	LowerName   string    `json:"-"`
+	Description string    `json:"description"`
+	Content     string    `json:"content"`
+	Project     string    `json:"project"`
 	CreatedAt   time.Time `db:"created_at"`
 	UpdatedAt   time.Time `db:"updated_at"`
-	Archived    bool
+	Archived    bool      `json:"archived"`
 
-	Tags []string
+	Tags []string `json:"tags"`
 	//Metadata key-values. Not in order
-	Metadata *map[string]string
+	Metadata *map[string]string `json:"metadata"`
 	//MetadataKeys provides ordered collection of keys
-	MetadataKeys *[]string
+	MetadataKeys *[]string `json:"-"`
+}
+
+func (b *Bookmark) Type() string {
+	return "bookmark"
 }
 
 //Return domain of the content if it is a link
